@@ -96,10 +96,10 @@ async function spider({ movieId, title, tmdbId, type = "movie" }) {
       }
     } else if (error.request) {
       // 请求已经成功发起，但没有收到响应
-      throw "服务器未响应...";
+      throw new Error("服务器未响应...");
     } else {
       // 发送请求时出了点问题
-      throw error.message;
+      throw error
     }
   }
 }
