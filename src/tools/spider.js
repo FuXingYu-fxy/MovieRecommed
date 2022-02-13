@@ -36,6 +36,8 @@ const saveFilename = path.resolve(
 
 const recordFilename = path.resolve(__dirname, '../dataset/record.json');
 
+const errorPath = path.resolve(__dirname, '../dataset/error/exception.json');
+
 /**
  * 为了避免重定向, 需要处理标题, 请求格式为
  * tmdbid-firstname(小写)-secondname(小写)
@@ -120,16 +122,36 @@ async function spider({ movieId, title, tmdbId, type = 'movie' }) {
       result.push(data);
     } catch (error) {
       danger(error.message);
-      info(
-        `程序中断于${new Date().toLocaleString()}, 请检查以下信息: tmdbId: ${tmdbId}, title: ${title}`
-      );
-      // 更新索引
-      updateRecord(i, segment + Number(result.length !== 0));
-      break;
+      // info(
+      //   `程序中断于${new Date().toLocaleString()}, 请检查以下信息: tmdbId: ${tmdbId}, title: ${title}`
+      // );
+      // // 更新索引
+      // updateRecord(i, segment + Number(result.length !== 0));
+      // break;
+
+      // 现在网络错误不再中断程序, 而是记录下出错的信息
+      recordException({
+        movieId,
+        tmdbId,
+        title,
+        date: new Date().toLocaleString(),
+      })
     }
   }
   saveData(result, segment);
 })(index, datasourcePath);
+
+function recordException(msg) {
+  const data = require(errorPath)
+  data.push(msg)
+  fs.writeFile(errorPath, JSON.stringify(data), err => {
+    if (err) {
+      danger(err.message)
+      return
+    }
+    success('错误信息已记录')
+  })
+}
 
 function saveData(data) {
   if (data.length === 0) {
