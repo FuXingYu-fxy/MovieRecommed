@@ -1,0 +1,19 @@
+{
+  "name": "get-imgs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./src/test.js",
+    "spider": "node ./src/tools/spider.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.25.0",
+    "chalk": "^4.1.2",
+    "cheerio": "^1.0.0-rc.10",
+    "csvtojson": "^2.0.10"
+  }
+}
