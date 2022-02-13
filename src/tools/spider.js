@@ -119,9 +119,7 @@ async function spider({ movieId, title, tmdbId, type = "movie" }) {
       break;
     }
   }
-  setTimeout(() => {
-    saveData(result, segment);
-  });
+  saveData(result, segment);
 })(index);
 
 function saveData(data, segment) {
