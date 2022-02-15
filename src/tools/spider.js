@@ -1,24 +1,11 @@
 const axios = require('axios').default;
 const cheerio = require('cheerio');
-const convert = require('./convertCsv');
+const {convert} = require('./processFile');
 const fs = require('fs');
-const chalk = require('chalk');
 const { index, segment } = require('../dataset/record.json');
 const path = require('path');
+const log = require('./log')
 
-const danger = (...text) => {
-  console.log(chalk.redBright.bold(...text));
-};
-const info = (...text) => {
-  console.log(chalk.blueBright.bold(...text));
-};
-const success = (...text) => {
-  console.log(chalk.greenBright.bold(...text));
-};
-
-const warn = (...text) => {
-  console.log(chalk.yellowBright.bold(...text));
-};
 const request = axios.create({
   baseURL: 'https://www.themoviedb.org',
   headers: {
@@ -48,7 +35,7 @@ const errorPath = path.resolve(__dirname, '../dataset/error/exception.json');
  */
 function processTitle(title) {
   const arr = title
-    .replace(/\(.*\)|[,'!:&\.\?\/\-]/g, ' ')
+    .replace(/\(.*\)|[,'’!:&\.\?\/\-]/g, ' ')
     .split(' ')
     .filter((v) => !!v)
     .map((v) => v.toLowerCase());
@@ -63,8 +50,8 @@ async function spider({ movieId, title, tmdbId, type = 'movie' }) {
   if (type === 'movie') {
     title = processTitle(title);
     if (!tmdbId || !title) {
-      warn('存在空数据');
-      warn(`${movieId}, ${title}, ${tmdbId}`);
+      log.warn('存在空数据');
+      log.warn(`${movieId}, ${title}, ${tmdbId}`);
       return {
         movieId,
         poster: 'emptyPoster',
@@ -76,7 +63,7 @@ async function spider({ movieId, title, tmdbId, type = 'movie' }) {
   }
   let url = `/${type}/${tmdbId}-${title}`;
   try {
-    info(`[===]正在爬取${url}`);
+    log.info(`[===]正在爬取${url}`);
     const { data } = await request(url);
     const $ = cheerio.load(data);
     // 取出背景图
@@ -88,7 +75,7 @@ async function spider({ movieId, title, tmdbId, type = 'movie' }) {
     const title = obj.attr('alt');
     // 电影简介
     const description = $('.overview p').text();
-    result.push({ movieId, poster, cover, title, description });
+    return { movieId, poster, cover, title, description };
   } catch (error) {
     if (error.response) {
       // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
@@ -97,7 +84,7 @@ async function spider({ movieId, title, tmdbId, type = 'movie' }) {
       }
       if (error.response.status === 404) {
         if (type === 'movie') {
-          warn(`服务端返回404, 尝试重定向类型为 tv...`);
+          log.warn(`服务端返回404, 尝试重定向类型为 tv...`);
           return await spider({ movieId, title, tmdbId, type: 'tv' });
         } else {
           throw new Error('服务端返回404, 请检查后重启程序');
@@ -121,21 +108,21 @@ async function spider({ movieId, title, tmdbId, type = 'movie' }) {
       const data = await spider({ movieId, title, tmdbId });
       result.push(data);
     } catch (error) {
-      danger(error.message);
-      // info(
-      //   `程序中断于${new Date().toLocaleString()}, 请检查以下信息: tmdbId: ${tmdbId}, title: ${title}`
-      // );
-      // // 更新索引
-      // updateRecord(i, segment + Number(result.length !== 0));
-      // break;
+      log.danger(error.message);
+      log.info(
+        `程序中断于${new Date().toLocaleString()}, 请检查以下信息: tmdbId: ${tmdbId}, title: ${title}`
+      );
+      // 更新索引
+      updateRecord(i, segment + Number(result.length !== 0));
+      break;
 
-      // 现在网络错误不再中断程序, 而是记录下出错的信息
-      recordException({
-        movieId,
-        tmdbId,
-        title,
-        date: new Date().toLocaleString(),
-      })
+      // // 现在网络错误不再中断程序, 而是记录下出错的信息
+      // recordException({
+      //   movieId,
+      //   tmdbId,
+      //   title,
+      //   date: new Date().toLocaleString(),
+      // })
     }
   }
   saveData(result, segment);
@@ -146,10 +133,10 @@ function recordException(msg) {
   data.push(msg)
   fs.writeFile(errorPath, JSON.stringify(data), err => {
     if (err) {
-      danger(err.message)
+      log.danger(err.message)
       return
     }
-    success('错误信息已记录')
+    log.success('错误信息已记录')
   })
 }
 
@@ -159,11 +146,11 @@ function saveData(data) {
   }
   fs.writeFile(saveFilename, JSON.stringify(data), (err) => {
     if (err) {
-      danger('保存data时出现了错误');
+      log.danger('保存data时出现了错误');
       console.log(err);
       return;
     }
-    success('分段数据已保存');
+    log.success('分段数据已保存');
   });
 }
 
@@ -179,7 +166,7 @@ function updateRecord(index, segment) {
         console.log(err);
         return;
       }
-      success(`已记录当前索引${index}`);
+      log.success(`已记录当前索引${index}`);
     }
   );
 }
