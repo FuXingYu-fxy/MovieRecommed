@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "node ./src/test.js",
-    "spider": "node ./src/tools/spider.js"
+    "spider": "node ./src/tools/spider.js",
+    "merge": "node ./src/mergeFile.js"
+
   },
   "keywords": [],
   "author": "",
