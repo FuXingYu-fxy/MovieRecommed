@@ -37,7 +37,9 @@ const mergeResult = (dirname, processedFilename) => {
           log.info(`打开文件${files[i]}时出现了错误`);
           return;
         }
-        const arr = JSON.parse(data).filter((v) => !!v);
+        const arr = JSON.parse(data).filter((item) => {
+          return !!item && item.poster !== 'emptyPoster'
+        });
         result.push(...arr);
         counter++;
         if (counter === files.length) {
