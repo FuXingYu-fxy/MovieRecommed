@@ -1,5 +1,5 @@
-const path = require('path');
-const { mergeResult } = require('./tools/processFile.js');
+import path from 'path';
+import { mergeResult } from './tools/processFile';
 
 (() => {
   mergeResult(path.resolve(__dirname, './dataset/result'), 'result.json');

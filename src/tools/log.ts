@@ -1,16 +1,16 @@
-const chalk = require('chalk');
+import chalk from 'chalk';
 
-const danger = (...text) => {
+const danger = (...text: any[]) => {
   console.log(chalk.redBright.bold(...text));
 };
-const info = (...text) => {
+const info = (...text: any[]) => {
   console.log(chalk.blueBright.bold(...text));
 };
-const success = (...text) => {
+const success = (...text: any[]) => {
   console.log(chalk.greenBright.bold(...text));
 };
 
-const warn = (...text) => {
+const warn = (...text: any[]) => {
   console.log(chalk.yellowBright.bold(...text));
 };
 
@@ -20,5 +20,4 @@ const log = {
   success,
   warn
 }
-
-module.exports = log
+export default log
