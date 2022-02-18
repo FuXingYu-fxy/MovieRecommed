@@ -1,25 +1,10 @@
 import { compose, DEBUG } from "./functionStyleProgrammingTools";
-/**
- * 示例说明
- * 假设有如下数据
- * 使用包含了用户喜好项的向量（或数组）代表每一个用户
- */
-const data = [
-  [4, 3, 0, 0, 5, 0],
-  [5, 0, 4, 0, 4, 0],
-  [4, 0, 5, 3, 4, 0],
-  [0, 3, 0, 0, 0, 5],
-  [0, 4, 0, 0, 0, 5],
-  [0, 0, 2, 4, 0, 5],
-];
 
-const userMap = ['用户1', '用户2', '用户3', '用户4', '用户5', '用户6'];
-
-function getVectorModulesLength(vector: number[]): number {
+export function getVectorModulesLength(vector: number[]): number {
   return Math.sqrt(vector.reduce((prev, cur) => prev + cur ** 2, 0));
 }
 
-function getQuantityProduct(vector1: number[], vector2: number[]): number {
+export function getQuantityProduct(vector1: number[], vector2: number[]): number {
   if (vector1.length !== vector2.length) {
     throw new Error(`vector1 and vector2 must have the same length, but the vector1's length ${vector1.length} and vector2 is ${vector2.length}`);
   }
@@ -30,7 +15,7 @@ function getQuantityProduct(vector1: number[], vector2: number[]): number {
   return sum;
 }
 
-function getCosSimilar(curUserIndex = 0) {
+export function getCosSimilarWithOther(curUserIndex = 0, data: number[][]) {
 let result = [];
   for (let i = 0; i < data.length; i++) {
     if (i === curUserIndex) {
@@ -46,8 +31,3 @@ let result = [];
   }
   return result;
 }
-  
-
-getCosSimilar(0);
-
-compose(DEBUG, getCosSimilar)(0);

@@ -124,7 +124,7 @@ async function spider(
   }
 }
 
-function readRecordFile<T = IndexRecord>(filepath: string): Promise<T> {
+export function readRecordFile<T = IndexRecord>(filepath: string): Promise<T> {
   return new Promise((r) => {
     fs.readFile(filepath, 'utf-8', (err, data) => {
       if (err) {
