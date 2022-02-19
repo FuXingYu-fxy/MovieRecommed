@@ -1,7 +1,8 @@
 DS_Store
 node_modules
-/dist
-src/dataset
+dist
+notes
+dataset
 
 
 # local env files

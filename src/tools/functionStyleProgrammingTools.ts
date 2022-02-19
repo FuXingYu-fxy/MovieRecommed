@@ -19,7 +19,7 @@ export const curry = (fn: Function) => {
   };
 };
 
-export const DEBUG = (x: any) => {
+export const id = (x: any) => {
   console.log(x);
   return x;
 };

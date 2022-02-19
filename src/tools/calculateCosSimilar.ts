@@ -1,5 +1,3 @@
-import { compose, DEBUG } from "./functionStyleProgrammingTools";
-
 export function getVectorModulesLength(vector: number[]): number {
   return Math.sqrt(vector.reduce((prev, cur) => prev + cur ** 2, 0));
 }

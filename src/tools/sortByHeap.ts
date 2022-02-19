@@ -1,4 +1,4 @@
-import { compose, DEBUG } from './functionStyleProgrammingTools';
+import { compose, id } from './functionStyleProgrammingTools';
 
 // 先复习一下堆排序
 function* range(start = 1, end = 10) {
@@ -48,4 +48,4 @@ function bubbleHeap(heap: number[], rootIndex: number, len: number) {
   }
   heap[parent] = recordElement;
 }
-compose(DEBUG, heapSort)(arr);
+compose(id, heapSort)(arr);

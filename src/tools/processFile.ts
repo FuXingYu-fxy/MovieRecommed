@@ -30,7 +30,7 @@ export function mergeResult(dirname: string, processedFilename: string) {
     }
     if (files.includes(processedFilename)) {
       log.danger(
-        '该目录下存在与第二个参数相同的文件, 似乎合并已完成. 如果想继续, 请重新制定文件名'
+        '该目录下存在与第二个参数相同的文件, 似乎合并已完成. 如果想继续, 请重新指定文件名'
       );
       return;
     }

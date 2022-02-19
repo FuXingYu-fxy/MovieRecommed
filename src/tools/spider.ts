@@ -1,11 +1,8 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-import { convert } from './processFile';
-import { resolve } from 'path';
+import {convert, Movie, MovieInfo} from './processFile'
 import fs from 'fs';
-import path from 'path';
-import log from './log';
-import { Movie, MovieInfo } from './processFile';
+import log from './log'
 
 // 分段保存的文件结构
 interface IndexRecord {
@@ -29,24 +26,6 @@ const request = axios.create({
     Connection: 'keep-alive',
   },
 });
-
-function configFilepath(segment: number) {
-  const datasourcePath = path.resolve(__dirname, '../dataset/movies.csv');
-  const saveFilename = path.resolve(
-    __dirname,
-    `../dataset/result/result-${segment}.json`
-  );
-
-  const recordFilename = path.resolve(__dirname, '../dataset/record.json');
-
-  const errorPath = path.resolve(__dirname, '../dataset/error/exception.json');
-  return {
-    datasourcePath,
-    saveFilename,
-    recordFilename,
-    errorPath,
-  };
-}
 
 /**
  * 为了避免重定向, 需要处理标题, 请求格式为
@@ -129,6 +108,7 @@ export function readRecordFile<T = IndexRecord>(filepath: string): Promise<T> {
     fs.readFile(filepath, 'utf-8', (err, data) => {
       if (err) {
         log.danger(err.message);
+        r({} as T)
         return;
       }
       r(JSON.parse(data));
@@ -136,14 +116,15 @@ export function readRecordFile<T = IndexRecord>(filepath: string): Promise<T> {
   });
 }
 
-(async function main() {
+export async function main() {
+
+  // 读取文件路径
+  // const { datasourcePath, recordFilename, errorPath } = PATH.spider
+  const { datasourcePath, recordFilename } = PATH.spider
+  const { index, segment } = await readRecordFile(recordFilename);
+  const saveFilename = PATH.spider.saveFilename + `-${segment}.json`
+
   let result: MovieInfo[] = [];
-  // 该文件记录着上一次爬虫中断后的信息
-  const { index, segment } = await readRecordFile(
-    resolve(__dirname, '../dataset/record.json')
-  );
-  // 文件路径
-  const { datasourcePath, errorPath, saveFilename, recordFilename } = configFilepath(segment);
   const json = await convert(datasourcePath);
 
   for (let i = index; i < json.length; i++) {
@@ -160,21 +141,21 @@ export function readRecordFile<T = IndexRecord>(filepath: string): Promise<T> {
       updateRecord(i, segment + Number(result.length !== 0), recordFilename);
       break;
 
-      // 现在网络错误不再中断程序, 而是记录下出错的信息
-      recordException(
-        {
-          movieId,
-          tmdbId,
-          title,
-          date: new Date().toLocaleString(),
-          err: error.message,
-        },
-        errorPath
-      );
+      // // 现在网络错误不再中断程序, 而是记录下出错的信息
+      // recordException(
+      //   {
+      //     movieId,
+      //     tmdbId,
+      //     title,
+      //     date: new Date().toLocaleString(),
+      //     err: error.message,
+      //   },
+      //   errorPath
+      // );
     }
   }
   saveData(result, saveFilename);
-})();
+}
 
 async function recordException(
   exceptionMsg: SpiderNetWorkErrorRecord,

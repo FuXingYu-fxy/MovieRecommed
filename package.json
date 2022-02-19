@@ -7,7 +7,9 @@
     "test": "node ./src/test.js",
     "spider": "node ./src/tools/spider.js",
     "merge": "node ./src/mergeFile.js",
-    "tsc": "./node_modules/.bin/tsc"
+    "tsc": "./node_modules/.bin/tsc",
+    "build": "webpack",
+    "start": "node ./dist/main.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,9 @@
   },
   "devDependencies": {
     "@types/node": "^17.0.18",
-    "typescript": "^4.5.5"
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.5.5",
+    "webpack": "^5.69.1",
+    "webpack-cli": "^4.9.2"
   }
 }

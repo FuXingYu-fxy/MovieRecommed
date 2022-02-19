@@ -1,8 +1,6 @@
-import csv from 'csvtojson';
 import fs from 'fs';
-import { resolve } from 'path';
 import log from './tools/log';
-import { getCosSimilarWithOther } from './tools/calculateCosSimilar';
+// import { getCosSimilarWithOther } from './tools/calculateCosSimilar';
 import { convert } from './tools/processFile';
 import { readRecordFile } from './tools/spider';
 
@@ -25,15 +23,12 @@ interface IdMap {
   [index: string]: number;
 }
 
-(async () => {
-  const dataSource = resolve(__dirname, './src/dataset/ratings.csv');
-  const savedFilepath = resolve(__dirname, './src/dataset/result/matrix.json');
-})();
-
-async function generateRatingMatri(
-  originFilepath: string,
-  savedFilepath: string
-) {
+async function generateRatingMatri({
+  originFilepath,
+  savedFilepath,
+  userId2IndexMapFilepath,
+  movieId2IndexMapFilepath,
+}: Result) {
   const hasRecordFile = fs.existsSync(savedFilepath);
   if (!hasRecordFile) {
     const json = await convert<MovieRating>(originFilepath);
@@ -79,31 +74,47 @@ async function generateRatingMatri(
     }
     // 保存评分矩阵 与 映射表
     fs.writeFile(
-      './dataset/result/matrix.json',
+      savedFilepath,
       JSON.stringify(transformedData),
       errFactory('===评分矩阵保存成功===')
     );
     fs.writeFile(
-      './dataset/result/movieId2IndexMap.json',
+      userId2IndexMapFilepath,
       JSON.stringify(movieId2IndexMap),
       errFactory('===电影id映射表保存成功===')
     );
     fs.writeFile(
-      './dataset/result/userId2IndexMap.json',
+      movieId2IndexMapFilepath,
       JSON.stringify(userId2IndexMap),
       errFactory('===用户id映射表保存成功===')
     );
     return {
       transformedData,
       movieId2IndexMap,
-      userId2IndexMap
-    }
+      userId2IndexMap,
+    };
   } else {
     // TODO 读出来返回
+    log.info('===正在读取文件===');
+    const matrix = await readRecordFile<number[][]>(savedFilepath);
+    log.success('=== matrix 读取成功===');
+    const movieId2IndexMap = await readRecordFile<IdMap>(
+      movieId2IndexMapFilepath
+    );
+    log.success('=== movieId map 读取成功===');
+    const userId2IndexMap = await readRecordFile<IdMap>(
+      userId2IndexMapFilepath
+    );
+    log.success('=== userId map 读取成功===');
+    return {
+      transformedData: matrix,
+      movieId2IndexMap,
+      userId2IndexMap,
+    };
   }
 }
 
-function errFactory(msg: string){
+function errFactory(msg: string) {
   return (err: NodeJS.ErrnoException | null) => {
     if (err) {
       log.danger(err.message);
@@ -111,4 +122,14 @@ function errFactory(msg: string){
     }
     log.success(msg);
   };
-};
+}
+
+(async () => {
+  const {transformedData, movieId2IndexMap, userId2IndexMap} = await generateRatingMatri(PATH.result);
+  // 失败时返回的是空数组
+  if (transformedData.length && Object.keys(movieId2IndexMap).length && Object.keys(userId2IndexMap).length) {
+    log.success('读取成功')
+  } else {
+    log.danger('读取失败')
+  }
+})();
