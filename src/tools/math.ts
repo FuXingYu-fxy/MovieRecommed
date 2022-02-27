@@ -13,6 +13,12 @@ export function getQuantityProduct(vector1: number[], vector2: number[]): number
   return sum;
 }
 
+/**
+ * 计算相似度
+ * @param curUserIndex 当前用户索引,如果只有`userId`,可通过映射表获取索引
+ * @param data 用户-评价矩阵, 行是用户, 列是电影评分
+ * @returns 返回相似度列表
+ */
 export function getCosSimilarWithOther(curUserIndex = 0, data: number[][]) {
 let result = [];
   for (let i = 0; i < data.length; i++) {

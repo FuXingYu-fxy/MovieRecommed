@@ -1,3 +1,4 @@
+// 将分段文件合并为一个文件
 import fs from 'fs';
 import path from 'path';
 import csv from 'csvtojson';
