@@ -49,9 +49,9 @@ export function getSimilarTopNIndex(similar: number[], K: number = 50) {
  * @param userIndex 当前用户索引
  * @returns 
  */
-export function getCurUserWatchedMovies(matrix: Matrix, userIndex: number) {
+export function getCurUserUnwatchMovies(matrix: Matrix, userIndex: number) {
   return matrix[userIndex]
-    .map((item, index) => (item === 0 ? -1 : index))
+    .map((item, index) => (item === 0 ? index : -1))
     .filter((item) => item !== -1);
 }
 /**
@@ -88,7 +88,6 @@ export async function generateRateMatrix({
     const json = await convert<MovieRating>(originFilepath);
     const userMovieRecord: MergedMovieRating = {};
     const movieIdSet = new Set<number>();
-
     for (let i = 0; i < json.length; i++) {
       const { userId, movieId, rating } = json[i];
       if (userId in userMovieRecord) {
@@ -99,7 +98,6 @@ export async function generateRateMatrix({
 
       movieIdSet.add(movieId);
     }
-
     const userIds = Object.keys(userMovieRecord);
     // 这时 movieIds 还是乱序的
     const movieIds = Array.from(movieIdSet);
