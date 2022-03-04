@@ -7,9 +7,9 @@
     "test": "node ./src/test.js",
     "spider": "node ./src/tools/spider.js",
     "merge": "node ./src/mergeFile.js",
-    "tsc": "./node_modules/.bin/tsc",
     "build": "webpack",
-    "start": "node ./dist/main.js"
+    "start": "node ./dist/main.js",
+    "prod": "webpack --env PRODUCTION"
   },
   "keywords": [],
   "author": "",
@@ -19,9 +19,13 @@
     "chalk": "^4.1.2",
     "cheerio": "^1.0.0-rc.10",
     "csvtojson": "^2.0.10",
+    "koa": "^2.13.4",
+    "koa-router": "^10.1.1",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
+    "@types/koa": "^2.13.4",
+    "@types/koa-router": "^7.4.4",
     "@types/lodash": "^4.14.179",
     "@types/node": "^17.0.18",
     "ts-loader": "^9.2.6",

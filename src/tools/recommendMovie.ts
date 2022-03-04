@@ -1,7 +1,9 @@
 import fs from 'fs';
+import log from '@/tools/log';
 import { convert } from '@/tools/processFile';
 import { readRecordFile } from '@/tools/spider';
-import log from '@/tools/log';
+import { getCosSimilarWithOther } from '@/tools/math';
+import { intersection, compact } from 'lodash';
 // 计算用户 u 对电影 i 的兴趣度
 // 计算步骤:
 // 1. 在相似度中取前50个, 作为矩阵v(50 * 1型)
@@ -33,7 +35,7 @@ type Matrix = number[][];
  * @param K 默认值`50`
  * @returns 降序排列的前`K`个用户的索引
  */
-export function getSimilarTopNIndex(similar: number[], K: number = 50) {
+function getSimilarTopNIndex(similar: number[], K: number = 50) {
   const map = new Map(similar.map((value, index) => [value, index]));
   // 从1开始是因为要去除最高的相似度, 也就是自己
   let similarDescSorted = similar
@@ -49,7 +51,7 @@ export function getSimilarTopNIndex(similar: number[], K: number = 50) {
  * @param userIndex 当前用户索引
  * @returns 
  */
-export function getCurUserUnwatchMovies(matrix: Matrix, userIndex: number) {
+function getCurUserUnwatchMovies(matrix: Matrix, userIndex: number) {
   return matrix[userIndex]
     .map((item, index) => (item === 0 ? index : -1))
     .filter((item) => item !== -1);
@@ -60,7 +62,7 @@ export function getCurUserUnwatchMovies(matrix: Matrix, userIndex: number) {
  * @param i 当前电影索引
  * @param curUserIndex 当前用户
  */
-export function getUserWithRatedMovie(
+function getUserWithRatedMovie(
   matrix: Matrix,
   i: number,
   curUserIndex: number = -1
@@ -77,7 +79,7 @@ export function getUserWithRatedMovie(
   return result;
 }
 
-export async function generateRateMatrix({
+async function generateRateMatrix({
   originFilepath,
   savedFilepath,
   userId2IndexMapFilepath,
@@ -177,4 +179,44 @@ function errFactory(msg: string) {
     }
     log.success(msg);
   };
+}
+
+export default async function recommend(userId: number) {
+  if (!userId) {
+    return []
+  }
+  const K = 50;
+  const N = 20;
+  try {
+    const { transformedData, userId2IndexMap } = await generateRateMatrix(PATH.result);
+    const curUserIndex = userId2IndexMap[userId];
+    const cosSimilar = getCosSimilarWithOther(curUserIndex, transformedData);
+    // 计算出当前用户未观看过哪些电影
+    const curUserWatchedMovieList = getCurUserUnwatchMovies(
+      transformedData,
+      curUserIndex
+    );
+
+    const TopNUserList = getSimilarTopNIndex(cosSimilar, K);
+    // 计算兴趣度
+    const interestScoreList = curUserWatchedMovieList.map((curMovieIndex) => {
+      const ratedUserList = getUserWithRatedMovie(
+        transformedData,
+        curMovieIndex,
+        curUserIndex
+      );
+      // 获得交集 V
+      const userIntersection = intersection(TopNUserList, ratedUserList);
+      // 计算用户u对交集V中用户所看过的电影的兴趣度
+      const score = compact(userIntersection).reduce((prev, cur) => {
+        return prev + cosSimilar[cur] * transformedData[cur][curMovieIndex];
+      }, 0);
+      return score;
+    });
+    // 然后就可以对 interestScoreList 排序，推荐给用户
+    return interestScoreList.sort((a, b) => b - a ).slice(0, N);
+  } catch (err) {
+    log.danger(err);
+    return []
+  }
 }

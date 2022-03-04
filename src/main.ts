@@ -1,58 +1,56 @@
+import Koa from 'koa';
+import Router from 'koa-router';
+import recommend from './tools/recommendMovie';
 import log from './tools/log';
-import fs from 'fs';
-import { getCosSimilarWithOther } from './tools/math';
-import { intersection, compact } from 'lodash';
-import {
-  getSimilarTopNIndex,
-  getUserWithRatedMovie,
-  generateRateMatrix,
-  getCurUserUnwatchMovies,
-} from '@/tools/recommendMovie';
+const port = 3000;
 
-(async () => {
-  try {
-    const { transformedData } = await generateRateMatrix(PATH.result);
-    const curUserIndex = 0;
+const app = new Koa();
 
-    const cosSimilar = getCosSimilarWithOther(curUserIndex, transformedData);
-    // 计算出当前用户未观看过哪些电影
-    const curUserWatchedMovieList = getCurUserUnwatchMovies(
-      transformedData,
-      curUserIndex
-    );
+const router = new Router();
+let times = 1
 
-    const TopNUserList = getSimilarTopNIndex(cosSimilar, 50);
-    // 计算兴趣度
-    const interestScoreList = curUserWatchedMovieList.map((curMovieIndex) => {
-      const ratedUserList = getUserWithRatedMovie(
-        transformedData,
-        curMovieIndex,
-        curUserIndex
-      );
-      // 获得交集 V
-      const userIntersection = intersection(TopNUserList, ratedUserList);
-      // 计算用户u对交集V中用户所看过的电影的兴趣度
-      const score = compact(userIntersection).reduce((prev, cur) => {
-        return prev + cosSimilar[cur] * transformedData[cur][curMovieIndex];
-      }, 0);
-      return score;
-    });
-    // 然后就可以对 interestScoreList 排序，推荐给用户
-    fs.writeFile(
-      './interestScoreList',
-      JSON.stringify(
-        interestScoreList.sort((a, b) => b - a),
-        null,
-        2
-      ),
-      (err) => {
-        if (err) {
-          log.danger(err.message);
-        }
-        log.success('success!!!');
-      }
-    );
-  } catch (err) {
-    log.danger(err);
+router.get('/recommend', async (ctx, next) => {
+  const {userId} = ctx.query
+  if (!userId) {
+    ctx.status = 400
+    ctx.body = {
+      msg: '参数异常, userId是必须的',
+      code: 400
+    }
+    return;
   }
-})();
+  const result = await recommend(Number(userId))
+  if (!result.length) {
+    ctx.status = 500;
+    ctx.body = {
+      msg: '没有找到推荐列表, userId 是否合法'
+    }
+    return;
+  }
+  ctx.body = JSON.stringify(result)
+  await next()
+})
+
+app.use(async (ctx, next) => {
+  const start = Date.now()
+  await next()
+  ctx.set('X-Response-Timeout', `${Date.now() - start}ms`)
+})
+
+app.use(async (ctx, next) => {
+  ctx.type = 'html';
+  ctx.body = '<h1>欢迎使用电影推荐系统</h1>'
+  await next()
+});
+
+
+app.use(router.routes())
+
+app.use(async (ctx, next) => {
+  log.warn(`[${times++}] 最后一个 app`)
+  await next()
+})
+
+app.listen(port, () => {
+  log.info(`this app is running at http:localhost:${port}`);
+})
