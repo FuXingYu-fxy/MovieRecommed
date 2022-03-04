@@ -181,14 +181,13 @@ function errFactory(msg: string) {
   };
 }
 
-export default async function recommend(userId: number) {
+export default async function recommendByUser(userId: number) {
   if (!userId) {
     return []
   }
   const K = 50;
   const N = 20;
   try {
-    const { transformedData, userId2IndexMap } = await generateRateMatrix(PATH.result);
     const curUserIndex = userId2IndexMap[userId];
     const cosSimilar = getCosSimilarWithOther(curUserIndex, transformedData);
     // 计算出当前用户未观看过哪些电影
@@ -220,3 +219,10 @@ export default async function recommend(userId: number) {
     return []
   }
 }
+
+let  transformedData: Matrix, userId2IndexMap: IdMap;
+generateRateMatrix(PATH.result)
+.then(v => {
+  transformedData = v.transformedData;
+  userId2IndexMap = v.userId2IndexMap;
+})

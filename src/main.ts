@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import Router from 'koa-router';
-import recommend from './tools/recommendMovie';
+import recommendByUser from './tools/recommendMovie';
 import log from './tools/log';
 const port = 3000;
 
@@ -19,7 +19,7 @@ router.get('/recommend', async (ctx, next) => {
     }
     return;
   }
-  const result = await recommend(Number(userId))
+  const result = await recommendByUser(Number(userId))
   if (!result.length) {
     ctx.status = 500;
     ctx.body = {
@@ -47,7 +47,7 @@ app.use(async (ctx, next) => {
 app.use(router.routes())
 
 app.use(async (ctx, next) => {
-  log.warn(`[${times++}] 最后一个 app`)
+  log.warn(`[${times++}] 已返回结果`)
   await next()
 })
 
