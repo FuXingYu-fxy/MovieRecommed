@@ -179,14 +179,12 @@ function errFactory(msg: string) {
   };
 }
 
-export default async function recommendByUser(userId: number) {
+export default async function recommendByUser(userId: string, N = 20) {
   if (!userId) {
     return []
   }
   // K 个最相似的用户
   const K = 50;
-  // N 部电影
-  const N = 20;
   try {
     const curUserIndex = userId2IndexMap[userId];
     const cosSimilar = getCosSimilarWithOther(curUserIndex, transformedData);
