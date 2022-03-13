@@ -4,6 +4,7 @@ import { convert } from '@/tools/processFile';
 import { readRecordFile } from '@/tools/spider';
 import { getCosSimilarWithOther } from '@/tools/math';
 import { intersection, compact } from 'lodash';
+import heapSort from '@/tools/sortByHeap';
 // 计算用户 u 对电影 i 的兴趣度
 // 计算步骤:
 // 1. 在相似度中取前50个, 作为矩阵v(50 * 1型)
@@ -14,7 +15,6 @@ interface MovieRating {
   movieId: number;
   rating: number;
 }
-
 interface MergedMovieRating {
   [index: number]: [
     {
@@ -37,11 +37,9 @@ type Matrix = number[][];
  */
 function getSimilarTopNIndex(similar: number[], K: number = 50) {
   const map = new Map(similar.map((value, index) => [value, index]));
-  // 从1开始是因为要去除最高的相似度, 也就是自己
-  let similarDescSorted = similar
-    .slice()
-    .sort((a, b) => b - a)
-    .slice(1, K + 1);
+  const similarCopy = similar.slice();
+  // 去掉最相似的一个, 因为那个就是自己
+  let similarDescSorted = heapSort(similarCopy, K + 1, true)
   return similarDescSorted.map((item) => map.get(item));
 }
 
@@ -185,7 +183,9 @@ export default async function recommendByUser(userId: number) {
   if (!userId) {
     return []
   }
+  // K 个最相似的用户
   const K = 50;
+  // N 部电影
   const N = 20;
   try {
     const curUserIndex = userId2IndexMap[userId];
@@ -213,7 +213,7 @@ export default async function recommendByUser(userId: number) {
       return score;
     });
     // 然后就可以对 interestScoreList 排序，推荐给用户
-    return interestScoreList.sort((a, b) => b - a ).slice(0, N);
+    return heapSort(interestScoreList, N)
   } catch (err) {
     log.danger(err);
     return []

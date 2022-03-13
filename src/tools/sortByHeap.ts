@@ -1,36 +1,26 @@
-import { compose, id } from './functionStyleProgrammingTools';
-
-// 先复习一下堆排序
-function* range(start = 1, end = 10) {
-  for (let i = start; i <= end; i++) {
-    yield i;
-  }
-}
-
-function shuffle(arr: number[]) {
-  for (let i = 0; i < arr.length; i++) {
-    const rangeIndex = Math.floor(Math.random() * arr.length);
-    [arr[rangeIndex], arr[i]] = [arr[i], arr[rangeIndex]];
-  }
-  return arr;
-}
-
-const arr = shuffle([...range()]);
-
-function heapSort(arr: number[]) {
+export default function heapSort(arr: number[], n = 10, dropFirst = false) {
+  // 大顶堆
   arr = arr.slice();
-
   for (let i = Math.floor((arr.length - 1) / 2); i >= 0; i--) {
     bubbleHeap(arr, i, arr.length);
   }
+  const result: number[] = [];
   // 堆结构完成构造完成, 开始排序
   for (let end = arr.length - 1; end >= 0; end--) {
+    if (!dropFirst || end !== arr.length - 1) {
+      // 如果 dropFirst 开启, 则忽略第一个
+      result.push(arr[0])
+    }
+    if (result.length >= n) {
+      return result;
+    }
     // 将头结点移到末尾
     [arr[0], arr[end]] = [arr[end], arr[0]];
     bubbleHeap(arr, 0, end - 1);
   }
-  return arr;
+  return result;
 }
+
 function bubbleHeap(heap: number[], rootIndex: number, len: number) {
   let parent = rootIndex;
   let child = parent * 2 + 1;
@@ -48,4 +38,3 @@ function bubbleHeap(heap: number[], rootIndex: number, len: number) {
   }
   heap[parent] = recordElement;
 }
-compose(id, heapSort)(arr);
