@@ -1,9 +1,9 @@
 import Koa from 'koa';
 import Router from 'koa-router';
-
+// import cors from "koa-cors";
 import recommendByUser from './tools/recommendMovie';
 import log from './tools/log';
-const port = 3000;
+const port = 5500;
 
 const app = new Koa();
 
@@ -11,7 +11,7 @@ const router = new Router();
 let times = 1
 
 router.get('/recommend', async (ctx, next) => {
-  const {userId} = ctx.query
+  const {userId, N} = ctx.query;
   if (!userId) {
     ctx.status = 400
     ctx.body = {
@@ -20,7 +20,7 @@ router.get('/recommend', async (ctx, next) => {
     }
     return;
   }
-  const result = await recommendByUser(Number(userId))
+  const result = await recommendByUser(userId as string, Number(N))
   if (!result.length) {
     ctx.status = 500;
     ctx.body = {
@@ -32,7 +32,15 @@ router.get('/recommend', async (ctx, next) => {
   await next()
 })
 
+// ================== begin ==================
+
+// app.use(cors({
+//   origin: "http:localhost"
+// }))
+
 app.use(async (ctx, next) => {
+  const origin = ctx.header.origin!
+  ctx.set('access-control-allow-origin', origin)
   const start = Date.now()
   await next()
   ctx.set('X-Response-Timeout', `${Date.now() - start}ms`)
