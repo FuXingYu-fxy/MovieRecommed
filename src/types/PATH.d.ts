@@ -3,9 +3,10 @@ interface Spider {
   recordFilename: string;
   errorPath: string;
   saveFilename: string;
+  picture: string;
 }
 
-declare interface Result {
+interface Result {
   userId2IndexMapFilepath: string;
   movieId2IndexMapFilepath: string;
   savedFilepath: string;

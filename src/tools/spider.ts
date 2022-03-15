@@ -27,6 +27,8 @@ const request = axios.create({
   },
 });
 
+
+
 /**
  * 为了避免重定向, 需要处理标题, 请求格式为
  * tmdbid-firstname(小写)-secondname(小写)
@@ -117,7 +119,6 @@ export function readRecordFile<T = IndexRecord>(filepath: string): Promise<T> {
 }
 
 export async function main() {
-
   // 读取文件路径
   // const { datasourcePath, recordFilename, errorPath } = PATH.spider
   const { datasourcePath, recordFilename } = PATH.spider
@@ -139,6 +140,7 @@ export async function main() {
       );
       // 更新索引
       updateRecord(i, segment + Number(result.length !== 0), recordFilename);
+      saveData(result, saveFilename);
       break;
 
       // // 现在网络错误不再中断程序, 而是记录下出错的信息
@@ -189,7 +191,7 @@ function saveData(data: MovieInfo[], saveFilename: string) {
   });
 }
 
-function updateRecord(index: number, segment: number, recordFilename: string) {
+export function updateRecord(index: number, segment: number, recordFilename: string) {
   fs.writeFile(
     recordFilename,
     JSON.stringify({
@@ -205,3 +207,5 @@ function updateRecord(index: number, segment: number, recordFilename: string) {
     }
   );
 }
+
+

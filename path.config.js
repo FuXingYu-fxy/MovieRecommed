@@ -18,8 +18,10 @@ const spider = {
   recordFilename: joinPartial('dataset/record.json'),
   // 爬虫返回 404 时，将当时参数以及错误信息保存到该文件中
   errorPath: joinPartial('dataset/error/exception.json'),
-  // 注意, 文件名不需要补完, result-0.json, result-1.json
+  // 文件夹
   saveFilename: joinPartial('dataset/result/result'),
+  // 文件夹
+  picture: joinPartial('dataset/picture')
 };
 
 const result = {

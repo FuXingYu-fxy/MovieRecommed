@@ -7,7 +7,10 @@ const nodeModules = {};
 // const nodeModules = Object.fromEntries(Object.keys(json).map(item => [item, item]))
 module.exports = (env) => {
   return {
-    entry: './src/main.ts',
+    entry: {
+      main: './src/main.ts',
+      fetchPicture: './src/fetchPicture.ts'
+    },
     output: {
       filename: '[name].js',
       path: resolve(__dirname, 'dist'),
