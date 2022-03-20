@@ -179,7 +179,8 @@ function errFactory(msg: string) {
   };
 }
 
-export default async function recommendByUser(userId: string, N = 20 ) {
+export default async function recommendByUser(userId: string, N: number) {
+  N = Number.isNaN(N) ? 20 : N
   if (!userId) {
     return []
   }
