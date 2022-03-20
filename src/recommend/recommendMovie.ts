@@ -1,7 +1,7 @@
 import fs from 'fs';
 import log from '@/tools/log';
 import { convert } from '@/tools/processFile';
-import { readRecordFile } from '@/tools/spider';
+import { readRecordFile } from '@/fetchMovie';
 import { getCosSimilarWithOther } from '@/tools/math';
 import { intersection, compact } from 'lodash';
 import heapSort from '@/tools/sortByHeap';
@@ -179,7 +179,7 @@ function errFactory(msg: string) {
   };
 }
 
-export default async function recommendByUser(userId: string, N = 20) {
+export default async function recommendByUser(userId: string, N = 20 ) {
   if (!userId) {
     return []
   }

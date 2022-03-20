@@ -1,4 +1,4 @@
-import { readRecordFile } from '@/tools/spider';
+import { readRecordFile } from '@/fetchMovie';
 import fs from 'fs';
 import { join } from 'path';
 const partialJoin = join.bind(null, __dirname, '../dataset');

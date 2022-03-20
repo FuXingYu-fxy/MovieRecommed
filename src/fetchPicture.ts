@@ -1,6 +1,6 @@
 import axios from "axios"
 import type {AxiosResponse} from "axios"
-import { readRecordFile, updateRecord } from "./tools/spider";
+import { readRecordFile, updateRecord } from "./fetchMovie";
 import { join } from "path";
 import { writeFile } from "fs";
 import log from "./tools/log";

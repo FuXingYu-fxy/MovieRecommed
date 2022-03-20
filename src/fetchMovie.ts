@@ -1,8 +1,8 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-import {convert, Movie, MovieInfo} from './processFile'
+import {convert, Movie, MovieInfo} from './tools/processFile'
 import fs from 'fs';
-import log from './log'
+import log from './tools/log'
 
 // 分段保存的文件结构
 interface IndexRecord {

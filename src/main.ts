@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import Router from 'koa-router';
-import recommendByUser from './tools/recommendMovie';
+import recommendByUser from './recommend/recommendMovie';
 import log from './tools/log';
 import connection, {query} from '@/db';
 import type {User} from "@/db"
