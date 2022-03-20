@@ -51,7 +51,7 @@ function generatePassword(bit = 32) {
     str += char;
   }
   let result = '';
-  for (let i = 0; i <= bit; i++) {
+  for (let i = 0; i < bit; i++) {
     result += str[~~(Math.random() * 32)];
   }
   return result;
@@ -77,7 +77,7 @@ async function f1() {
   const userArr = json1.slice(0, j + 1).map((item) => {
     return {
       id: item.userId,
-      password: generatePassword(16),
+      password: generatePassword(),
     };
   });
   fs.writeFile(partialJoin('_user.csv'), jsontocsv(userArr), () => {
