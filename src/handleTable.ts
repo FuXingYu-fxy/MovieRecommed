@@ -179,7 +179,7 @@ async function f5() {
     partialJoin('origin_movies.csv')
   );
   const tag: Tag[] = await csv().fromFile(partialJoin('_tag_map.csv'));
-  const tagMap = Object.fromEntries(tag.map((item, i) => [item.tag_name, i]));
+  const tagMap = Object.fromEntries(tag.map((item, i) => [item.tag_name, i + 1]));
 
   const result = [];
   let i = 1;
