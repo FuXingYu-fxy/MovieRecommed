@@ -37,7 +37,6 @@ module.exports = (env) => {
         data: resolve(__dirname, 'dataset'),
       },
       extensions: ['.js', '.ts', '...'],
-      preferRelative: true,
     },
     module: {
       rules: [
