@@ -144,7 +144,7 @@ async function generateRateMatrix({
       transformedData,
       movieId2IndexMap,
       userId2IndexMap,
-      userMovieRecord,
+      // userMovieRecord,
     };
   } else {
     // TODO 读出来返回
@@ -189,14 +189,15 @@ export default async function recommendByUser(userId: string, N: number) {
   try {
     const curUserIndex = userId2IndexMap[userId];
     const cosSimilar = getCosSimilarWithOther(curUserIndex, transformedData);
-    // 计算出当前用户未观看过哪些电影
+    // 计算出当前用户未观看过哪些电影, 索引
     const curUserWatchedMovieList = getCurUserUnwatchMovies(
       transformedData,
       curUserIndex
     );
-
+    // 用户索引
     const TopNUserList = getSimilarTopNIndex(cosSimilar, K);
     // 计算兴趣度
+    const movieIndexMap = {} as { [key: string]: number };
     const interestScoreList = curUserWatchedMovieList.map((curMovieIndex) => {
       const ratedUserList = getUserWithRatedMovie(
         transformedData,
@@ -209,19 +210,22 @@ export default async function recommendByUser(userId: string, N: number) {
       const score = compact(userIntersection).reduce((prev, cur) => {
         return prev + cosSimilar[cur] * transformedData[cur][curMovieIndex];
       }, 0);
+      movieIndexMap[score] = curMovieIndex;
       return score;
     });
-    // 然后就可以对 interestScoreList 排序，推荐给用户
-    return heapSort(interestScoreList, N)
+    return heapSort(interestScoreList, N).map(item => movieIndex2Id[movieIndexMap[item]])
   } catch (err) {
     log.danger(err);
     return []
   }
 }
 
-let  transformedData: Matrix, userId2IndexMap: IdMap;
+let  transformedData: Matrix, userId2IndexMap: IdMap, movieId2IndexMap: IdMap;
+let movieIndex2Id: string[];
 generateRateMatrix(PATH.result)
 .then(v => {
   transformedData = v.transformedData;
   userId2IndexMap = v.userId2IndexMap;
+  movieId2IndexMap = v.movieId2IndexMap;
+  movieIndex2Id = Object.keys(movieId2IndexMap)
 })
