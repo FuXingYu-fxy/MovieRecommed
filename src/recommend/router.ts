@@ -1,5 +1,5 @@
 import Router from 'koa-router';
-import recommendByUser from '@/recommend/recommendMovie'
+import {recommendByUser, recommendByItem} from '@/recommend/recommendMovie'
 import createMsg from '@/createMsg';
 const recommendRouter = new Router();
 
@@ -17,5 +17,13 @@ recommendRouter.get('/recommend', async (ctx, next) => {
   })
   await next();
 });
+
+recommendRouter.get('/generateCommonOccuranceMatrix', async (ctx, next) => {
+  const {userId} = ctx.query;
+  ctx.body = createMsg({
+    data: recommendByItem(userId as string)
+  })
+  await next();
+})
 
 export default recommendRouter;

@@ -5,7 +5,7 @@ import { readRecordFile } from '@/fetchMovie';
 import { getSimilarWithOtherUser, getSimilarWithOtherItem } from '@/tools/math';
 import { intersection, compact } from 'lodash';
 import heapSort from '@/tools/sortByHeap';
-import type {Item} from '@/tools/sortByHeap';
+import type { Item } from '@/tools/sortByHeap';
 // 计算用户 u 对电影 i 的兴趣度
 // 计算步骤:
 // 1. 在相似度中取前50个, 作为矩阵v(50 * 1型)
@@ -40,24 +40,36 @@ function getSimilarTopNIndex(similar: number[], K: number) {
   const similarTransfer = similar.map((value, index) => {
     return {
       value,
-      index
-    }
-  })
+      index,
+    };
+  });
   let similarDescSorted = heapSort(similarTransfer, K + 1);
   // 去掉最相似的一个, 因为那个就是自己
-  similarDescSorted.shift()
-  return similarDescSorted.map(item => item.index);
+  similarDescSorted.shift();
+  return similarDescSorted.map((item) => item.index);
 }
 
 /**
- * 获取当前用户观看过的电影
+ * 获取当前用户`未观看`过的电影
  * @param matrix 用户-评分矩阵
  * @param userIndex 当前用户索引
  * @returns
  */
-function getCurUserUnwatchMovies(matrix: Matrix, userIndex: number) {
+function getUserUnwatchMovies(matrix: Matrix, userIndex: number) {
   return matrix[userIndex]
     .map((item, index) => (item === 0 ? index : -1))
+    .filter((item) => item !== -1);
+}
+
+/**
+ * 获取当前用户`已观看`过的电影
+ * @param matrix 用户-评分矩阵
+ * @param userIndex 当前用户索引
+ * @returns
+ */
+function getUserWatchMovies(matrix: Matrix, userIndex: number) {
+  return matrix[userIndex]
+    .map((item, index) => (item === 0 ? -1 : index))
     .filter((item) => item !== -1);
 }
 /**
@@ -131,20 +143,16 @@ async function generateRateMatrix({
       }
     }
     // 保存评分矩阵 与 映射表
-    fs.writeFile(
-      savedFilepath,
-      JSON.stringify(userRatingMatrix),
-      () => log.success('===评分矩阵保存成功===')
+    fs.writeFile(savedFilepath, JSON.stringify(userRatingMatrix), () =>
+      log.success('===评分矩阵保存成功===')
     );
     fs.writeFile(
       movieId2IndexMapFilepath,
       JSON.stringify(movieId2IndexMap),
       () => log.success('===电影id映射表保存成功===')
     );
-    fs.writeFile(
-      userId2IndexMapFilepath,
-      JSON.stringify(userId2IndexMap),
-      () => log.success('===用户id映射表保存成功===')
+    fs.writeFile(userId2IndexMapFilepath, JSON.stringify(userId2IndexMap), () =>
+      log.success('===用户id映射表保存成功===')
     );
     return {
       userRatingMatrix,
@@ -172,8 +180,7 @@ async function generateRateMatrix({
   }
 }
 
-
-export async function recommendByUser(userId: string, N: number = 20) {
+export function recommendByUser(userId: string, N: number = 20) {
   if (!userId) {
     return [];
   }
@@ -182,63 +189,87 @@ export async function recommendByUser(userId: string, N: number = 20) {
     const curUserIndex = userId2IndexMap[userId];
     const cosSimilar = getSimilarWithOtherUser(curUserIndex, userRatingMatrix);
     // 计算出当前用户未观看过哪些电影, 索引
-    const curUserWatchedMovieList = getCurUserUnwatchMovies(
+    const curUserWatchedMovieList = getUserUnwatchMovies(
       userRatingMatrix,
       curUserIndex
     );
     // 前 K 个最相似的用户索引
     const TopNUserList = getSimilarTopNIndex(cosSimilar, K);
     // 计算兴趣度
-    const interestScoreList: Item[] = curUserWatchedMovieList.map((curMovieIndex) => {
-      const ratedUserList = getUserWithRatedMovie(
-        userRatingMatrix,
-        curMovieIndex,
-        curUserIndex
-      );
-      // 获得交集 V
-      const userIntersection = intersection(TopNUserList, ratedUserList);
-      // 计算用户u对交集V中用户所看过的电影的兴趣度
-      const score = compact(userIntersection).reduce((prev, cur) => {
-        // TODO 如果评分为0, 乘上1会不会好点？
-        return prev + cosSimilar[cur] * userRatingMatrix[cur][curMovieIndex];
-      }, 0);
-      return {
-        value: score,
-        index: curMovieIndex
+    const interestScoreList: Item[] = curUserWatchedMovieList.map(
+      (curMovieIndex) => {
+        const ratedUserList = getUserWithRatedMovie(
+          userRatingMatrix,
+          curMovieIndex,
+          curUserIndex
+        );
+        // 获得交集 V
+        const userIntersection = intersection(TopNUserList, ratedUserList);
+        // 计算用户u对交集V中用户所看过的电影的兴趣度
+        const score = compact(userIntersection).reduce((prev, cur) => {
+          // TODO 如果评分为0, 乘上1会不会好点？
+          return prev + cosSimilar[cur] * userRatingMatrix[cur][curMovieIndex];
+        }, 0);
+        return {
+          value: score,
+          index: curMovieIndex,
+        };
       }
-    });
-    return heapSort(interestScoreList, N).map(item => movieIndex2IdMap[item.index]);
+    );
+    return heapSort(interestScoreList, N).map(
+      (item) => movieIndex2IdMap[item.index]
+    );
   } catch (err) {
     log.danger(err);
     return [];
   }
 }
 
-export function recommendByItem(movieId: string, N: number = 20) {
-  if (!movieId) {
+export function recommendByItem(userId: string, N: number = 20) {
+  if (!userId) {
     return [];
   }
   const K = 50;
-  const movieIndex = movieId2IndexMap[movieId]
-  if (movieIndex === undefined) {
-    // 没有该电影id
-    return []
+  // 当前用户观看过的电影, 索引列表
+  const userWatchedMovies = getUserWatchMovies(
+    userRatingMatrix,
+    userId2IndexMap[userId]
+  );
+  const userWatchedMovieSet = new Set(userWatchedMovies);
+  // 获取第一部电影的相似度
+  let similarList: number[] = getSimilarWithOtherItem({
+    curMovieIndex: userWatchedMovies[0],
+    userWatchedMovieSet,
+    userRatingMatrix,
+    matrix: occuranceMatrix,
+  });
+  // 获取剩余的相似度
+  for (let i = 1; i < userWatchedMovies.length; i++) {
+    similarList = getSimilarWithOtherItem({
+      curMovieIndex: userWatchedMovies[i],
+      userWatchedMovieSet,
+      userRatingMatrix,
+      matrix: occuranceMatrix,
+      similarList, // 传入similarList 同时更新
+    });
   }
-  const similarList = getSimilarWithOtherItem(movieId2IndexMap[movieId], userRatingMatrix, occuranceMatrix)
-  // 获取前50部电影索引
+  // 获取前 K 部电影索引
   const TopNSimilarList = getSimilarTopNIndex(similarList, K)
-  
-  return TopNSimilarList
+  // 推荐给用户
+  return TopNSimilarList.map((item) => movieIndex2IdMap[item]);
 }
 
 /**
  * 构建同现矩阵, 非常耗时 15s, 第一次使用后，保存成文件，后面使用时再读取
  */
-export async function generateCoOccuranceMatrix(filePath: string, matrix: Matrix): Promise<Matrix> {
-  log.info('正在构建同现矩阵...')
+export async function generateCoOccuranceMatrix(
+  filePath: string,
+  matrix: Matrix
+): Promise<Matrix> {
+  log.info('正在构建同现矩阵...');
   if (fs.existsSync(filePath)) {
     // 如果存在直接读取返回
-    const result = await readRecordFile<Matrix>(filePath)
+    const result = await readRecordFile<Matrix>(filePath);
     log.success('===同现矩阵构建完毕===');
     return result;
   }
@@ -271,11 +302,10 @@ export async function generateCoOccuranceMatrix(filePath: string, matrix: Matrix
   }
   log.success(`同现矩阵构建完毕, 耗时${Date.now() - start} ms`);
   fs.writeFile(filePath, JSON.stringify(result), () => {
-    log.success('===同现矩阵保存成功===')
-  })
+    log.success('===同现矩阵保存成功===');
+  });
   return result;
 }
-
 
 let userRatingMatrix: Matrix, userId2IndexMap: IdMap, movieId2IndexMap: IdMap;
 let movieIndex2IdMap: string[];
@@ -285,5 +315,8 @@ generateRateMatrix(PATH.result).then(async (v) => {
   userId2IndexMap = v.userId2IndexMap;
   movieId2IndexMap = v.movieId2IndexMap;
   movieIndex2IdMap = Object.keys(movieId2IndexMap);
-  occuranceMatrix = await generateCoOccuranceMatrix(PATH.result.coOccuranceMatrix, userRatingMatrix)
+  occuranceMatrix = await generateCoOccuranceMatrix(
+    PATH.result.coOccuranceMatrix,
+    userRatingMatrix
+  );
 });
