@@ -30,6 +30,7 @@ const result = {
   savedFilepath: joinPartial('dataset/result/matrix.json'),
   originFilepath: joinPartial('dataset/ratings.csv'),
   waitMergeDirPath: joinPartial('dataset/result'),
+  coOccuranceMatrix: joinPartial('dataset/result/coOccuranceMatrix.json'),
 };
 
 module.exports = {

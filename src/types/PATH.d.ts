@@ -12,6 +12,7 @@ interface Result {
   savedFilepath: string;
   originFilepath: string;
   waitMergeDirPath: string;
+  coOccuranceMatrix: string;
 }
 
 declare const PATH = {

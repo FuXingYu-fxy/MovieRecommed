@@ -1,16 +1,17 @@
-export default function heapSort(arr: number[], n: number, dropFirst = false) {
+export interface Item {
+  value: number;
+  index: number;
+}
+export default function heapSort(arr: Item[], n: number) {
   // 大顶堆
   arr = arr.slice();
   for (let i = Math.floor((arr.length - 1) / 2); i >= 0; i--) {
     bubbleHeap(arr, i, arr.length);
   }
-  const result: number[] = [];
+  const result: Item[] = [];
   // 堆结构完成构造完成, 开始排序
   for (let end = arr.length - 1; end >= 0; end--) {
-    if (!dropFirst || end !== arr.length - 1) {
-      // 如果 dropFirst 开启, 则忽略第一个
-      result.push(arr[0])
-    }
+    result.push(arr[0])
     if (result.length >= n) {
       return result;
     }
@@ -21,7 +22,7 @@ export default function heapSort(arr: number[], n: number, dropFirst = false) {
   return result;
 }
 
-function bubbleHeap(heap: number[], rootIndex: number, len: number) {
+function bubbleHeap(heap: Item[], rootIndex: number, len: number) {
   let parent = rootIndex;
   let child = parent * 2 + 1;
   let recordElement = heap[parent];
@@ -29,7 +30,7 @@ function bubbleHeap(heap: number[], rootIndex: number, len: number) {
     if (child + 1 < len && heap[child + 1] > heap[child]) {
       child++;
     }
-    if (recordElement >= heap[child]) {
+    if (recordElement.value >= heap[child].value) {
       break;
     }
     heap[parent] = heap[child];
