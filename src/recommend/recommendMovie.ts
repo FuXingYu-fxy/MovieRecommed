@@ -3,7 +3,6 @@ import log from '@/tools/log';
 import { convert } from '@/tools/processFile';
 import { readRecordFile } from '@/fetchMovie';
 import { getSimilarWithOtherUser, getSimilarWithOtherItem } from '@/tools/math';
-import { intersection } from 'lodash';
 import heapSort from '@/tools/sortByHeap';
 import type { Item } from '@/tools/sortByHeap';
 // 计算用户 u 对电影 i 的兴趣度
@@ -197,15 +196,9 @@ export function recommendByUser(userId: string, N: number = 20) {
     // 计算兴趣度
     const interestScoreList: Item[] = curUserUnWatchedMovieIndexList.map(
       (curMovieIndex) => {
-        const ratedUserList = getUserWithRatedMovie(
-          userRatingMatrix,
-          curMovieIndex,
-          curUserIndex
-        );
-        // 获得交集 V
-        const userIntersection = intersection(TopNUserList, ratedUserList);
-        // 计算用户u对交集V中用户所看过的电影的兴趣度
-        const score = userIntersection.reduce((prev, cur) => {
+        // 计算用户u对v中用户所看过的电影的兴趣度, 不用再计算交集, 如果没有评分
+        // 所在项自然为0, 不影响计算结果
+        const score = TopNUserList.reduce((prev, cur) => {
           return prev + cosSimilar[cur] * userRatingMatrix[cur][curMovieIndex];
         }, 0);
         return {
