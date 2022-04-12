@@ -3,12 +3,12 @@ import {recommendByUser, recommendByItem} from '@/recommend/recommendMovie'
 import createMsg from '@/createMsg';
 const recommendRouter = new Router();
 
-recommendRouter.get('/recommend', async (ctx, next) => {
+recommendRouter.get('/recommendByUser', async (ctx, next) => {
   const { userId, N } = ctx.query;
   if (!userId) {
     ctx.throw(400, 'userId is required');
   }
-  const result = await recommendByUser(userId as string, Number(N));
+  const result = recommendByUser(userId as string, Number(N || 20));
   if (!result.length) {
     ctx.throw(400, 'userId is not exist');
   }
@@ -18,10 +18,17 @@ recommendRouter.get('/recommend', async (ctx, next) => {
   await next();
 });
 
-recommendRouter.get('/generateCommonOccuranceMatrix', async (ctx, next) => {
-  const {userId} = ctx.query;
+recommendRouter.get('/recommendByItem', async (ctx, next) => {
+  const { userId, N } = ctx.query;
+  if (!userId) {
+    ctx.throw(400, 'userId is required');
+  }
+  const result = recommendByItem(userId as string, Number(N || 20));
+  if (!result.length) {
+    ctx.throw(400, 'userId is not exist');
+  }
   ctx.body = createMsg({
-    data: recommendByItem(userId as string)
+    data: result,
   })
   await next();
 })

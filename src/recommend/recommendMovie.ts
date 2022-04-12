@@ -2,7 +2,7 @@ import fs from 'fs';
 import log from '@/tools/log';
 import { convert } from '@/tools/processFile';
 import { readRecordFile } from '@/fetchMovie';
-import { getSimilarWithOtherUser, getSimilarWithOtherItem } from '@/tools/math';
+import { getSimilarWithOtherUser, getCandidateRecommendItemList } from '@/tools/math';
 import heapSort from '@/tools/sortByHeap';
 import type { Item } from '@/tools/sortByHeap';
 // 计算用户 u 对电影 i 的兴趣度
@@ -80,16 +80,7 @@ function getUserWithRatedMovie(
   i: number,
   curUserIndex: number = -1
 ) {
-  const result: number[] = [];
-  for (let userIndex = 0; userIndex < matrix.length; userIndex++) {
-    if (userIndex === curUserIndex) continue;
-    let userRatedMovies = matrix[userIndex];
-    // 打过分的就不可能为0
-    if (userRatedMovies[i] !== 0) {
-      result.push(userIndex);
-    }
-  }
-  return result;
+  return matrix.filter((item, userIndex) => item[i] && curUserIndex !== userIndex)
 }
 
 async function generateRateMatrix({
@@ -177,11 +168,8 @@ async function generateRateMatrix({
   }
 }
 
-export function recommendByUser(userId: string, N: number = 20) {
+export function recommendByUser(userId: string, N: number) {
   // TODO 优化, 先构造倒排列表, 然后建立用户相似度矩阵
-  if (!userId) {
-    return [];
-  }
   const K = 50;
   try {
     const curUserIndex = userId2IndexMap[userId];
@@ -216,44 +204,49 @@ export function recommendByUser(userId: string, N: number = 20) {
   }
 }
 
-export function recommendByItem(userId: string, N: number = 20) {
-  if (!userId) {
+export function recommendByItem(userId: string, N: number) {
+  const K = 50;
+  const userIndex = userId2IndexMap[userId];
+  if (typeof userIndex === 'undefined') {
     return [];
   }
-  const K = 50;
-  // 当前用户观看过的电影, 索引列表
+  // // 当前用户观看过的电影, 索引列表
   const userWatchedMovies = getUserWatchMovies(
     userRatingMatrix,
-    userId2IndexMap[userId]
+    userIndex
   );
-  const userWatchedMovieSet = new Set(userWatchedMovies);
-  // 获取第一部电影的相似度
-  let similarList: number[] = getSimilarWithOtherItem({
-    curMovieIndex: userWatchedMovies[0],
-    userWatchedMovieSet,
-    userRatingMatrix,
-    matrix: occuranceMatrix,
+  // 候选列表直接取用户没有看过的电影
+  const candidateRecommend = getCandidateRecommendItemList(itemSimilarMatrix, userWatchedMovies);
+  // const candidateRecommend = getUserUnwatchMovies(userRatingMatrix, userIndex);
+
+  const interestScoreList: Item[] = candidateRecommend.map((movieIndex) => {
+    // 对候选推荐列表中的每个物品再次计算相似度, 取前K个
+    let similarItem: Item[] = itemSimilarMatrix[movieIndex].map((item, i) => {
+      return {
+        value: item,
+        index: i,
+      }
+    })
+    // similarItem = heapSort(similarItem, K);
+    // similarItem.sort((a, b) => b.value - a.value)
+    // 计算兴趣度
+    const score = similarItem.reduce((prev, cur) => {
+      return prev + cur.value * userRatingMatrix[userIndex][cur.index];
+    }, 0);
+
+    return {
+      value: score,
+      index: movieIndex
+    }
   });
-  // 获取剩余的相似度
-  for (let i = 1; i < userWatchedMovies.length; i++) {
-    similarList = getSimilarWithOtherItem({
-      curMovieIndex: userWatchedMovies[i],
-      userWatchedMovieSet,
-      userRatingMatrix,
-      matrix: occuranceMatrix,
-      similarList, // 传入similarList 同时更新
-    });
-  }
-  // 获取前 K 部电影索引
-  const TopNSimilarList = getSimilarTopNIndex(similarList, K)
-  // 推荐给用户
-  return TopNSimilarList.map((item) => movieIndex2IdMap[item]);
+  // TopN推荐
+  return heapSort(interestScoreList, N).map((item) => movieIndex2IdMap[item.index]);
 }
 
 /**
  * 构建同现矩阵, 非常耗时 15s, 第一次使用后，保存成文件，后面使用时再读取
  */
-export async function generateCoOccuranceMatrix(
+async function generateCoOccuranceMatrix(
   filePath: string,
   matrix: Matrix
 ): Promise<Matrix> {
@@ -299,9 +292,38 @@ export async function generateCoOccuranceMatrix(
   return result;
 }
 
+/**
+ * 构建物品相似度矩阵, 非常耗时 13s，但是不能保存成文件, 要根据同现矩阵的更新进行更形
+ */
+function generateItemSimilarMatrix(occuranceMatrix: Matrix, userRatingMatrix: Matrix) {
+  const start = Date.now();
+  const favoriteList: number[] = [];
+  for (let i = 0; i < userRatingMatrix[0].length; i++) {
+    let count = 0;
+    for (let j = 0; j < userRatingMatrix.length; j++) {
+      userRatingMatrix[j][j] !== 0 && count++;
+    }
+    favoriteList.push(count);
+  }
+  const result = [];
+  // TODO 对称矩阵优化
+  for (let i = 0; i < occuranceMatrix.length; i++) {
+    for (let j = 0; j < occuranceMatrix[i].length; j++) {
+      if (i === 0) {
+        result.push(Array(occuranceMatrix[i].length).fill(0));
+      }
+      result[i][j] = occuranceMatrix[i][j] / Math.sqrt(favoriteList[i] * favoriteList[j])
+    }
+  }
+  log.success(`物品相似度矩阵构建完毕, 耗时${Date.now() - start} ms`);
+  return result;
+}
+
+const start = Date.now();
 let userRatingMatrix: Matrix, userId2IndexMap: IdMap, movieId2IndexMap: IdMap;
 let movieIndex2IdMap: string[];
 let occuranceMatrix: Matrix;
+let itemSimilarMatrix: Matrix;
 generateRateMatrix(PATH.result).then(async (v) => {
   userRatingMatrix = v.userRatingMatrix;
   userId2IndexMap = v.userId2IndexMap;
@@ -311,4 +333,6 @@ generateRateMatrix(PATH.result).then(async (v) => {
     PATH.result.coOccuranceMatrix,
     userRatingMatrix
   );
+  itemSimilarMatrix = generateItemSimilarMatrix(occuranceMatrix, userRatingMatrix);
+  log.success(`系统启动完毕, 耗时${Date.now() - start} ms`);
 });
