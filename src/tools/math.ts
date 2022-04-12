@@ -41,7 +41,7 @@ export function getSimilarWithOtherUser(curUserIndex = 0, userRatingMatrix: Matr
   let result = [];
   for (let i = 0; i < userRatingMatrix.length; i++) {
     if (i === curUserIndex) {
-      result.push(1);
+      result.push(0);
       continue;
     }
     const x = userRatingMatrix[curUserIndex];

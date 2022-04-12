@@ -3,7 +3,7 @@ import log from '@/tools/log';
 import { convert } from '@/tools/processFile';
 import { readRecordFile } from '@/fetchMovie';
 import { getSimilarWithOtherUser, getSimilarWithOtherItem } from '@/tools/math';
-import { intersection, compact } from 'lodash';
+import { intersection } from 'lodash';
 import heapSort from '@/tools/sortByHeap';
 import type { Item } from '@/tools/sortByHeap';
 // 计算用户 u 对电影 i 的兴趣度
@@ -43,9 +43,7 @@ function getSimilarTopNIndex(similar: number[], K: number) {
       index,
     };
   });
-  let similarDescSorted = heapSort(similarTransfer, K + 1);
-  // 去掉最相似的一个, 因为那个就是自己
-  similarDescSorted.shift();
+  let similarDescSorted = heapSort(similarTransfer, K);
   return similarDescSorted.map((item) => item.index);
 }
 
@@ -181,6 +179,7 @@ async function generateRateMatrix({
 }
 
 export function recommendByUser(userId: string, N: number = 20) {
+  // TODO 优化, 先构造倒排列表, 然后建立用户相似度矩阵
   if (!userId) {
     return [];
   }
@@ -189,14 +188,14 @@ export function recommendByUser(userId: string, N: number = 20) {
     const curUserIndex = userId2IndexMap[userId];
     const cosSimilar = getSimilarWithOtherUser(curUserIndex, userRatingMatrix);
     // 计算出当前用户未观看过哪些电影, 索引
-    const curUserWatchedMovieList = getUserUnwatchMovies(
+    const curUserUnWatchedMovieIndexList = getUserUnwatchMovies(
       userRatingMatrix,
       curUserIndex
     );
     // 前 K 个最相似的用户索引
     const TopNUserList = getSimilarTopNIndex(cosSimilar, K);
     // 计算兴趣度
-    const interestScoreList: Item[] = curUserWatchedMovieList.map(
+    const interestScoreList: Item[] = curUserUnWatchedMovieIndexList.map(
       (curMovieIndex) => {
         const ratedUserList = getUserWithRatedMovie(
           userRatingMatrix,
@@ -206,8 +205,7 @@ export function recommendByUser(userId: string, N: number = 20) {
         // 获得交集 V
         const userIntersection = intersection(TopNUserList, ratedUserList);
         // 计算用户u对交集V中用户所看过的电影的兴趣度
-        const score = compact(userIntersection).reduce((prev, cur) => {
-          // TODO 如果评分为0, 乘上1会不会好点？
+        const score = userIntersection.reduce((prev, cur) => {
           return prev + cosSimilar[cur] * userRatingMatrix[cur][curMovieIndex];
         }, 0);
         return {
@@ -296,6 +294,7 @@ export async function generateCoOccuranceMatrix(
         if (matrix[i][k] === 0) {
           continue;
         }
+        // TODO 优化, 矩阵是个对称矩阵, 只需要两个for循环
         result[j][k] += 1;
       }
     }
