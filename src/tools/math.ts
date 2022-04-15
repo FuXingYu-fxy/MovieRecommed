@@ -61,16 +61,22 @@ export function getSimilarWithOtherUser(
  * 生成候选推荐列表
  * @param itemSimilarMatrix 物品相似度矩阵
  * @param watchedMovieList 用户已观看过的电影
+ * @param existMovie 用户已观看过的电影, 集合
  * @returns
  */
 export function getCandidateRecommendItemList(
   itemSimilarMatrix: Matrix,
-  watchedMovieList: number[]
+  watchedMovieList: number[],
+  existMovie: Set<number>
 ) {
   const result = new Set<number>();
+  // 排除用户已看过的电影
   for (let i = 0; i < watchedMovieList.length; i++) {
     const movie = watchedMovieList[i];
     for (let j = 0; j < itemSimilarMatrix[movie].length; j++) {
+      if (existMovie.has(j)) {
+        continue;
+      }
       if (itemSimilarMatrix[movie][j] > 0) {
         result.add(j);
       }
