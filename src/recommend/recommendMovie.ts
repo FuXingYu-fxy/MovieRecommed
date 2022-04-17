@@ -8,6 +8,7 @@ import {
 } from '@/tools/math';
 import heapSort from '@/tools/sortByHeap';
 import type { Item } from '@/tools/sortByHeap';
+import {query} from "@/db";
 // 计算用户 u 对电影 i 的兴趣度
 // 计算步骤:
 // 1. 在相似度中取前50个, 作为矩阵v(50 * 1型)
@@ -173,13 +174,13 @@ async function generateRateMatrix({
   }
 }
 
-export function recommendByUser(userId: string, N: number) {
+export async function recommendByUser(userId: string, N: number) {
   // TODO 优化, 先构造倒排列表, 然后建立用户相似度矩阵
   const K = 50;
   try {
     const userIndex = userId2IndexMap[userId];
     if (typeof userIndex === 'undefined') {
-      throw new Error('该用户不存在');
+      throw new Error(`can't find map when userId=${userId}`);
     }
     const cosSimilar = getSimilarWithOtherUser(userIndex, userRatingMatrix);
     // 计算出当前用户未观看过哪些电影, 索引
@@ -203,16 +204,17 @@ export function recommendByUser(userId: string, N: number) {
         };
       }
     );
-    return heapSort(interestScoreList, N).map(
+    const ids = heapSort(interestScoreList, N).map(
       (item) => movieIndex2IdMap[item.index]
     );
+    return await queryMovieById(ids);
   } catch (err) {
     log.danger(err);
     return [];
   }
 }
 
-export function recommendByItem(userId: string, N: number) {
+export async function recommendByItem(userId: string, N: number) {
   const K = 50;
   const userIndex = userId2IndexMap[userId];
   try {
@@ -248,13 +250,28 @@ export function recommendByItem(userId: string, N: number) {
       };
     });
     // TopN推荐
-    return heapSort(interestScoreList, N).map(
+    const ids = heapSort(interestScoreList, N).map(
       (item) => movieIndex2IdMap[item.index]
     );
+    return await queryMovieById(ids);
   } catch (err) {
     log.danger(err);
     return [];
   }
+}
+
+export async function queryMovieById(ids: string[]) {
+  interface MovieInfo {
+    id: number;
+    poster: string;
+    cover: string;
+    title_zh: string;
+    title_cn: string;
+    description: string;
+  }
+  const condition = ids.map(item => `id=${item}`).join(' or ')
+  const sql = `select id, poster, cover, title_zh, title_cn, description from movie where ${condition}`
+  return await query<MovieInfo>(sql);
 }
 
 /**
