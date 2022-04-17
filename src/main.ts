@@ -6,6 +6,7 @@ import userRouter from '@/user/router';
 import recommendRouter from '@/recommend/router';
 import logger from 'koa-logger';
 import koaStatic from 'koa-static';
+import createMsg from '@/createMsg';
 
 // 数据库连接
 connection.connect((err) => {
@@ -39,9 +40,9 @@ async function pageNotFound(ctx: Koa.Context, next: Koa.Next) {
       break;
     case 'json':
       ctx.type = 'json';
-      ctx.body = {
-        message: 'Page Not Found',
-      };
+      ctx.body = createMsg({
+        data: 'Page Not Found'
+      });
       break;
     default:
       ctx.type = 'text';
@@ -50,10 +51,20 @@ async function pageNotFound(ctx: Koa.Context, next: Koa.Next) {
   await next();
 }
 
+function conditionLogger() {
+  const log = logger()
+  const reg = /\.jpg$/;
+  return async function (ctx: Koa.Context, next: Koa.Next) {
+    if (reg.test(ctx.url)) {
+      return await next();
+    }
+    await log(ctx, next)
+  }
+}
 app
   .use(responseTime)
   .use(parseBody)
-  .use(logger())
+  .use(conditionLogger())
   .use(koaStatic(PATH.spider.picture))
   .use(
     cors({
