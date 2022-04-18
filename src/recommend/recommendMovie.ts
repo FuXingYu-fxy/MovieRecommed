@@ -8,7 +8,7 @@ import {
 } from '@/tools/math';
 import heapSort from '@/tools/sortByHeap';
 import type { Item } from '@/tools/sortByHeap';
-import {query} from "@/db";
+import { query } from '@/db';
 // 计算用户 u 对电影 i 的兴趣度
 // 计算步骤:
 // 1. 在相似度中取前50个, 作为矩阵v(50 * 1型)
@@ -223,7 +223,7 @@ export async function recommendByItem(userId: string, N: number) {
     }
     // 当前用户观看过的电影, 索引列表
     const userWatchedMovies = getUserWatchMovies(userRatingMatrix, userIndex);
-    const existMovie = new Set(userWatchedMovies)
+    const existMovie = new Set(userWatchedMovies);
     const candidateRecommend = getCandidateRecommendItemList(
       itemSimilarMatrix,
       userWatchedMovies,
@@ -238,12 +238,12 @@ export async function recommendByItem(userId: string, N: number) {
           value: item,
           index: i,
         };
-      })
+      });
       // similarItem = heapSort(similarItem, K);
       // 计算兴趣度
       const score = userWatchedMovies.reduce((prev, cur) => {
         return prev + userRatingMatrix[userIndex][cur] * similarItem[cur].value;
-      }, 0)
+      }, 0);
       return {
         value: score,
         index: movieIndex,
@@ -269,8 +269,8 @@ export async function queryMovieById(ids: string[]) {
     title_cn: string;
     description: string;
   }
-  const condition = ids.map(item => `id=${item}`).join(' or ')
-  const sql = `select id, poster, cover, title_zh, title_cn, description from movie where ${condition}`
+  const condition = ids.map((item) => `id=${item}`).join(' or ');
+  const sql = `select id, poster, cover, title_zh, title_cn, description from movie where ${condition}`;
   return await query<MovieInfo>(sql);
 }
 
@@ -375,3 +375,61 @@ generateRateMatrix(PATH.result).then(async (v) => {
   );
   log.success(`系统启动完毕, 耗时${Date.now() - start} ms`);
 });
+
+/**
+ * 更新矩阵的方法
+ */
+
+export function updateUserRating(
+  userId: number,
+  movieId: number,
+  rating: number,
+
+) {
+  const row = userId2IndexMap[userId]
+  const column = movieId2IndexMap[movieId]
+  const score = userRatingMatrix[row][column];
+  if (score === 0) {
+    // 是用户新增的, 要更新同现矩阵
+    setImmediate(() => {
+      updateOccuranceMatrix(row, column)
+    })
+  }
+  userRatingMatrix[row][column] = rating;
+  log.success('===评分矩阵更新成功===');
+}
+
+function updateOccuranceMatrix(row: number, column: number) {
+  // 找出需要更新的矩阵索引
+  const watchedMovieIndexList = userRatingMatrix[row]
+    .map((item, index) => {
+      // 排除了当前的电影
+      return item !== 0 && column !== index ? index : -1;
+    })
+    .filter((v) => !!v);
+  for (const i of watchedMovieIndexList) {
+    occuranceMatrix[column][i] += 1;
+    // 因为是对称矩阵, 同时更新对称处的位置
+    occuranceMatrix[i][column] += 1;
+  }
+}
+
+export function saveUserRatingMatrix() {
+  fs.writeFile(
+    PATH.result.savedFilepath,
+    JSON.stringify(userRatingMatrix),
+    () => {
+      log.success('===评分矩阵保存成功===');
+    }
+  );
+}
+
+export function saveOccuranceMatrix() {
+  fs.writeFile(
+    PATH.result.coOccuranceMatrix,
+    JSON.stringify(occuranceMatrix),
+    () => {
+      log.success('===同现矩阵保存成功===');
+    }
+  );
+}

@@ -7,6 +7,7 @@ import recommendRouter from '@/recommend/router';
 import logger from 'koa-logger';
 import koaStatic from 'koa-static';
 import createMsg from '@/createMsg';
+import movieRouter from '@/movie/router';
 
 // 数据库连接
 connection.connect((err) => {
@@ -76,6 +77,7 @@ app
   .use(pageNotFound)
   .use(userRouter.routes())
   .use(recommendRouter.routes())
+  .use(movieRouter.routes())
   .on('error', (err) => {
     log.danger(err);
   })
