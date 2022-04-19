@@ -82,7 +82,8 @@ export default function TopN(arr: Item[], n = 50) {
   const heap = new Heap();
   for (let i = 0; i < arr.length; i++) {
     const item = arr[i];
-    if (heap.size() === 0 || item.value > heap.peek().value) {
+    let len = heap.size();
+    if ((0 <= len && len <= n) || item.value > heap.peek().value) {
       heap.push(item);
       if (heap.size() > n) {
         heap.pop();
