@@ -355,6 +355,23 @@ function generateItemSimilarMatrix(
   return result;
 }
 
+/**
+ * 最热门电影推荐
+ */
+export async function hottestMovieRecommend() {
+  const result: Item[] = [];
+  for (let i = 0; i < userRatingMatrix[0].length; i++) {
+    let count = 0;
+    for (let j = 0; j < userRatingMatrix.length; j++) {
+      userRatingMatrix[j][i] && count++;
+    }
+    result.push({value: count, index: i});
+  }
+  const top = TopN(result, 30)
+  const hottestMovieIds = top.map(item => movieIndex2IdMap[item.index])
+  return await queryMovieById(hottestMovieIds)
+}
+
 const start = Date.now();
 let userRatingMatrix: Matrix, userId2IndexMap: IdMap, movieId2IndexMap: IdMap;
 let movieIndex2IdMap: string[];

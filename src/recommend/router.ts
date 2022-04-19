@@ -1,5 +1,5 @@
 import Router from 'koa-router';
-import {recommendByUser, recommendByItem, queryMovieById} from '@/recommend/recommendMovie'
+import {recommendByUser, recommendByItem, queryMovieById, hottestMovieRecommend} from '@/recommend/recommendMovie'
 import createMsg from '@/createMsg';
 const recommendRouter = new Router();
 
@@ -43,6 +43,14 @@ recommendRouter.get('/queryById', async (ctx, next) => {
   ctx.body = createMsg({
     data: await queryMovieById(ids as string[])
   });
+  await next();
+})
+
+recommendRouter.get('/hottestMovieRecommend', async (ctx, next) => {
+  ctx.type = 'json';
+  ctx.body = createMsg({
+    data: await hottestMovieRecommend()
+  })
   await next();
 })
 
