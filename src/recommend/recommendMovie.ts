@@ -6,7 +6,7 @@ import {
   getSimilarWithOtherUser,
   getCandidateRecommendItemList,
 } from '@/tools/math';
-import heapSort from '@/tools/sortByHeap';
+import TopN from '@/tools/sortByHeap';
 import type { Item } from '@/tools/sortByHeap';
 import { query } from '@/db';
 // 计算用户 u 对电影 i 的兴趣度
@@ -46,7 +46,7 @@ function getSimilarTopNIndex(similar: number[], K: number) {
       index,
     };
   });
-  let similarDescSorted = heapSort(similarTransfer, K);
+  let similarDescSorted = TopN(similarTransfer, K);
   return similarDescSorted.map((item) => item.index);
 }
 
@@ -204,7 +204,7 @@ export async function recommendByUser(userId: string, N: number) {
         };
       }
     );
-    const ids = heapSort(interestScoreList, N).map(
+    const ids = TopN(interestScoreList, N).map(
       (item) => movieIndex2IdMap[item.index]
     );
     return await queryMovieById(ids);
@@ -239,7 +239,7 @@ export async function recommendByItem(userId: string, N: number) {
           index: i,
         };
       });
-      // similarItem = heapSort(similarItem, K);
+      // similarItem = TopN(similarItem, K);
       // 计算兴趣度
       const score = userWatchedMovies.reduce((prev, cur) => {
         return prev + userRatingMatrix[userIndex][cur] * similarItem[cur].value;
@@ -250,7 +250,7 @@ export async function recommendByItem(userId: string, N: number) {
       };
     });
     // TopN推荐
-    const ids = heapSort(interestScoreList, N).map(
+    const ids = TopN(interestScoreList, N).map(
       (item) => movieIndex2IdMap[item.index]
     );
     return await queryMovieById(ids);

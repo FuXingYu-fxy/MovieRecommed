@@ -17,8 +17,8 @@ movieRouter.get('/queryRating', async (ctx, next) => {
   await next();
 });
 
-movieRouter.get('/updateRating', async (ctx, next) => {
-  const { userId, movieId, rating } = ctx.query;
+movieRouter.post('/updateRating', async (ctx, next) => {
+  const { userId, movieId, rating } = ctx.request.body;
   if (!userId || !movieId || !rating) {
     ctx.throw(400, 'bad request userId、movieId、rating is required');
   }
