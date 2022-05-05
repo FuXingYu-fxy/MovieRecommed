@@ -10,12 +10,14 @@ directiveRouter.get('/save', async (ctx, next) => {
     saveUserRatingMatrix();
   } else if (directive === 'occurance') {
     saveOccuranceMatrix();
-  } else if (directive === 'both') {
+  } else {
     saveUserRatingMatrix();
     saveOccuranceMatrix();
   }
   ctx.type = 'json';
-  ctx.body = createMsg()
+  ctx.body = createMsg({
+    message: '数据已保存'
+  })
   await next();
 })
 

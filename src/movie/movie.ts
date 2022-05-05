@@ -14,3 +14,10 @@ export async function updateMovieRating(userId: number, movieId: number, rating:
   const res = await query(sql)
   return res;
 }
+
+export async function queryMovieByTag(tagId: number) {
+  const sql = `select movie_id from tag where tag_id=${tagId}`
+  const res = await query(sql);
+  console.log(res)
+  return res;
+}
