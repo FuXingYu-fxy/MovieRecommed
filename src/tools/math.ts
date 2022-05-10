@@ -1,6 +1,6 @@
 type Matrix = number[][];
 type Vector = number[];
-type Tuple = [number, number] | undefined;
+type Tuple = [number, number] | null;
 type UserMatrix = Tuple[][];
 /**
  * 获取向量模长
@@ -50,17 +50,17 @@ export function getSimilarWithOtherUser(
       continue;
     }
     const x = userRatingMatrix[curUserIndex].map((item) => {
-      if (typeof item === 'undefined') {
-        return 0;
-      } else {
+      if (item instanceof Array) {
         return item[0] * 0.7 + item[1] * 0.3;
+      } else {
+        return 0;
       }
     });
     const y = userRatingMatrix[i].map((item) => {
-      if (typeof item === 'undefined') {
-        return 0;
-      } else {
+      if (item instanceof Array) {
         return item[0] * 0.7 + item[1] * 0.3;
+      } else {
+        return 0;
       }
     });
     result.push(
