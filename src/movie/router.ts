@@ -29,16 +29,22 @@ movieRouter
     await next();
   })
   .post('/updateRating', async (ctx, next) => {
-    const { userId, movieId, rating } = ctx.request.body;
-    if (!userId || !movieId || !rating) {
-      ctx.throw(400, 'bad request userId、movieId、rating is required');
+    // 均为 number类型
+    const { userId, movieId, rating, implictRating } = ctx.request.body;
+    if (userId === undefined || movieId === undefined) {
+      ctx.throw(400, 'bad request, userId、movieIdis required');
     }
     ctx.type = 'json';
     try {
-      await updateMovieRating(Number(userId), Number(movieId), Number(rating));
+      await updateMovieRating({
+        userId: userId,
+        movieId: movieId,
+        rating: rating,
+        implictRating: implictRating,
+      })
       ctx.body = createMsg();
       // 更新矩阵
-      updateUserRating(Number(userId), Number(movieId), Number(rating));
+      updateUserRating(userId, movieId, rating, implictRating);
     } catch {
       ctx.throw(500, 'update failed');
     }

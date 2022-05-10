@@ -5,10 +5,10 @@ import Router from "koa-router";
 const directiveRouter = new Router;
 
 directiveRouter.get('/save', async (ctx, next) => {
-  const {directive} = ctx.query;
-  if (directive === 'rating') {
+  const {target} = ctx.query;
+  if (target === 'rating') {
     saveUserRatingMatrix();
-  } else if (directive === 'occurance') {
+  } else if (target === 'occurance') {
     saveOccuranceMatrix();
   } else {
     saveUserRatingMatrix();

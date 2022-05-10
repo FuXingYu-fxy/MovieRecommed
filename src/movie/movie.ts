@@ -10,9 +10,22 @@ export async function queryMovieRating(userId: number, movieId: number) {
   const [result] = await query<MovieRating>(sql);
   return result || 0;
 }
-
-export async function updateMovieRating(userId: number, movieId: number, rating: number) {
-  const sql = `update rating set rating = ${rating} where user_id=${userId} and movie_id=${movieId}`;
+interface UpdateParams {
+  userId: number;
+  movieId: number;
+  rating: number;
+  implictRating: number;
+}
+export async function updateMovieRating({userId, movieId, rating, implictRating}: UpdateParams) {
+  let sql;
+  if (implictRating === undefined) {
+    sql = `update rating set rating = ${rating} where user_id=${userId} and movie_id=${movieId}`;
+  } else if (rating === undefined) {
+    sql = `update rating set implict_rating = ${implictRating} where user_id=${userId} and movie_id=${movieId}`;
+  } else {
+    // 同时存在
+    sql = `update rating set rating = ${rating}, implict_rating = ${implictRating} where user_id=${userId} and movie_id=${movieId}`;
+  }
   const res = await query(sql)
   return res;
 }

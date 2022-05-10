@@ -31,6 +31,9 @@ interface MergedMovieRating {
 interface IdMap {
   [index: string]: number;
 }
+type Tuple = [number, number] | undefined;
+// 现在每个元素是一个元组, 第一个元素是 rating, 第二个元素是 implict_rating
+type UserMatrix = Tuple[][];
 type Matrix = number[][];
 
 /**
@@ -56,9 +59,9 @@ function getSimilarTopNIndex(similar: number[], K: number) {
  * @param userIndex 当前用户索引
  * @returns
  */
-function getUserUnwatchMovies(matrix: Matrix, userIndex: number) {
+function getUserUnwatchMovies(matrix: UserMatrix, userIndex: number) {
   return matrix[userIndex]
-    .map((item, index) => (item === 0 ? index : -1))
+    .map((item, index) => (item === undefined ? index : -1))
     .filter((item) => item !== -1);
 }
 
@@ -68,9 +71,9 @@ function getUserUnwatchMovies(matrix: Matrix, userIndex: number) {
  * @param userIndex 当前用户索引
  * @returns
  */
-function getUserWatchMovies(matrix: Matrix, userIndex: number) {
+function getUserWatchMovies(matrix: UserMatrix, userIndex: number) {
   return matrix[userIndex]
-    .map((item, index) => (item === 0 ? -1 : index))
+    .map((item, index) => (item === undefined ? -1 : index))
     .filter((item) => item !== -1);
 }
 /**
@@ -103,9 +106,10 @@ async function generateRateMatrix({
     for (let i = 0; i < json.length; i++) {
       const { userId, movieId, rating } = json[i];
       if (userId in userMovieRecord) {
-        userMovieRecord[userId].push({ movieId, rating });
+        // 隐性评分和显性评分占比为 3 : 7
+        userMovieRecord[userId].push({ movieId, rating: rating * 0.7 });
       } else {
-        userMovieRecord[userId] = [{ movieId, rating }];
+        userMovieRecord[userId] = [{ movieId, rating: rating * 0.7 }];
       }
 
       movieIdSet.add(movieId);
@@ -123,17 +127,19 @@ async function generateRateMatrix({
       movieIds.sort((a, b) => a - b).map((movieId, index) => [movieId, index])
     );
 
-    const userRatingMatrix: Matrix = Array(userIds.length).fill(undefined);
+    const userRatingMatrix: UserMatrix = Array(userIds.length).fill(undefined);
     for (let i = 0; i < userIds.length; i++) {
       const userId = userIds[i];
       const userIndex = userId2IndexMap[userId];
       // 为每一个用户填充矩阵, 注意该矩阵是一个稀疏矩阵
-      userRatingMatrix[userIndex] = Array(movieIds.length).fill(0);
+      userRatingMatrix[userIndex] = Array(movieIds.length).fill(undefined);
       const curUserRecord = userMovieRecord[Number(userId)];
       for (let j = 0; j < curUserRecord.length; j++) {
         const { movieId, rating } = curUserRecord[j];
         const movieIndex = movieId2IndexMap[movieId];
-        userRatingMatrix[userIndex][movieIndex] = rating;
+        if (rating !== 0) {
+          userRatingMatrix[userIndex][movieIndex] = [rating, 0];
+        }
       }
     }
     // 保存评分矩阵 与 映射表
@@ -156,7 +162,7 @@ async function generateRateMatrix({
     };
   } else {
     log.info('===正在读取文件===');
-    const matrix = await readRecordFile<Matrix>(savedFilepath);
+    const matrix = await readRecordFile<UserMatrix>(savedFilepath);
     log.success('=== matrix 读取成功===');
     const movieId2IndexMap = await readRecordFile<IdMap>(
       movieId2IndexMapFilepath
@@ -196,7 +202,13 @@ export async function recommendByUser(userId: string, N: number) {
         // 计算用户u对v中用户所看过的电影的兴趣度, 不用再计算交集, 如果没有评分
         // 所在项自然为0, 不影响计算结果
         const score = TopNUserList.reduce((prev, cur) => {
-          return prev + cosSimilar[cur] * userRatingMatrix[cur][curMovieIndex];
+          // 考虑到隐式评分
+          const tuple = userRatingMatrix[cur][curMovieIndex];
+          if (typeof tuple === 'undefined') {
+            return prev;
+          } else {
+            return prev + cosSimilar[cur] * (tuple[0] * 0.7 + tuple[1] * 0.3);
+          }
         }, 0);
         return {
           value: score,
@@ -242,7 +254,14 @@ export async function recommendByItem(userId: string, N: number) {
       // similarItem = TopN(similarItem, K);
       // 计算兴趣度
       const score = userWatchedMovies.reduce((prev, cur) => {
-        return prev + userRatingMatrix[userIndex][cur] * similarItem[cur].value;
+        // 兴趣度计算时要混合隐性评分
+        const tuple = userRatingMatrix[userIndex][cur];
+        if (typeof tuple === 'undefined') {
+          // 视为0
+          return prev;
+        } else {
+          return prev + (tuple[0] * 0.7 + tuple[1] * 0.3) * similarItem[cur].value;
+        }
       }, 0);
       return {
         value: score,
@@ -279,7 +298,7 @@ export async function queryMovieById(ids: string[]) {
  */
 async function generateCoOccuranceMatrix(
   filePath: string,
-  matrix: Matrix
+  matrix: UserMatrix
 ): Promise<Matrix> {
   log.info('正在构建同现矩阵...');
   if (fs.existsSync(filePath)) {
@@ -300,7 +319,7 @@ async function generateCoOccuranceMatrix(
         // 填充矩阵, 第一个用户遍历完后就能填满
         result.push(Array(columnLen).fill(0));
       }
-      if (matrix[i][j] === 0) {
+      if (matrix[i][j] === undefined) {
         continue;
       }
 
@@ -308,7 +327,7 @@ async function generateCoOccuranceMatrix(
         if (j === k) {
           continue;
         }
-        if (matrix[i][k] === 0) {
+        if (matrix[i][k] === undefined) {
           continue;
         }
         // TODO 优化, 矩阵是个对称矩阵, 只需要两个for循环
@@ -328,7 +347,7 @@ async function generateCoOccuranceMatrix(
  */
 function generateItemSimilarMatrix(
   occuranceMatrix: Matrix,
-  userRatingMatrix: Matrix
+  userRatingMatrix: UserMatrix
 ) {
   log.info('正在构建相似度矩阵...');
   const start = Date.now();
@@ -336,7 +355,7 @@ function generateItemSimilarMatrix(
   for (let i = 0; i < userRatingMatrix[0].length; i++) {
     let count = 0;
     for (let j = 0; j < userRatingMatrix.length; j++) {
-      userRatingMatrix[j][j] !== 0 && count++;
+      userRatingMatrix[j][j] !== undefined && count++;
     }
     favoriteList.push(count);
   }
@@ -373,7 +392,7 @@ export async function hottestMovieRecommend() {
 }
 
 const start = Date.now();
-let userRatingMatrix: Matrix, userId2IndexMap: IdMap, movieId2IndexMap: IdMap;
+let userRatingMatrix: UserMatrix, userId2IndexMap: IdMap, movieId2IndexMap: IdMap;
 let movieIndex2IdMap: string[];
 let occuranceMatrix: Matrix;
 let itemSimilarMatrix: Matrix;
@@ -401,18 +420,20 @@ export function updateUserRating(
   userId: number,
   movieId: number,
   rating: number,
-
+  implictRating: number,
 ) {
   const row = userId2IndexMap[userId]
   const column = movieId2IndexMap[movieId]
-  const score = userRatingMatrix[row][column];
-  if (score === 0) {
+  // Tuple 是 undefined | [number, number]
+  const tuple  = userRatingMatrix[row][column]
+  if (typeof tuple !== 'undefined') {
+    tuple[0] = rating * 0.7;
+    tuple[1] = implictRating * 0.3;
+  } else {
     // 是用户新增的, 要更新同现矩阵
-    setImmediate(() => {
-      updateOccuranceMatrix(row, column)
-    })
+    userRatingMatrix[row][column] = [rating * 0.7, implictRating * 0.3];
+    updateOccuranceMatrix(row, column)
   }
-  userRatingMatrix[row][column] = rating;
   log.success('===评分矩阵更新成功===');
 }
 
@@ -420,10 +441,10 @@ function updateOccuranceMatrix(row: number, column: number) {
   // 找出需要更新的矩阵索引
   const watchedMovieIndexList = userRatingMatrix[row]
     .map((item, index) => {
-      // 排除了当前的电影
-      return item !== 0 && column !== index ? index : -1;
+      // 不为0的就是需要更新的索引, 排除了当前的电影
+      return (item !== undefined && column !== index) ? index : -1;
     })
-    .filter((v) => !!v);
+    .filter((v) => v !== -1);
   for (const i of watchedMovieIndexList) {
     occuranceMatrix[column][i] += 1;
     // 因为是对称矩阵, 同时更新对称处的位置

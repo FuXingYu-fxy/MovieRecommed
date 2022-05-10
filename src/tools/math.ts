@@ -1,5 +1,7 @@
 type Matrix = number[][];
 type Vector = number[];
+type Tuple = [number, number] | undefined;
+type UserMatrix = Tuple[][];
 /**
  * 获取向量模长
  * @param vector 向量
@@ -39,7 +41,7 @@ export function getQuantityProduct(
  */
 export function getSimilarWithOtherUser(
   curUserIndex = 0,
-  userRatingMatrix: Matrix
+  userRatingMatrix: UserMatrix
 ) {
   let result = [];
   for (let i = 0; i < userRatingMatrix.length; i++) {
@@ -47,8 +49,20 @@ export function getSimilarWithOtherUser(
       result.push(0);
       continue;
     }
-    const x = userRatingMatrix[curUserIndex];
-    const y = userRatingMatrix[i];
+    const x = userRatingMatrix[curUserIndex].map((item) => {
+      if (typeof item === 'undefined') {
+        return 0;
+      } else {
+        return item[0] * 0.7 + item[1] * 0.3;
+      }
+    });
+    const y = userRatingMatrix[i].map((item) => {
+      if (typeof item === 'undefined') {
+        return 0;
+      } else {
+        return item[0] * 0.7 + item[1] * 0.3;
+      }
+    });
     result.push(
       getQuantityProduct(x, y) /
         (getVectorModulesLength(x) * getVectorModulesLength(y))
