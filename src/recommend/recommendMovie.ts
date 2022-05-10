@@ -260,7 +260,9 @@ export async function recommendByItem(userId: string, N: number) {
           // 视为0
           return prev;
         } else {
-          return prev + (tuple[0] * 0.7 + tuple[1] * 0.3) * similarItem[cur].value;
+          return (
+            prev + (tuple[0] * 0.7 + tuple[1] * 0.3) * similarItem[cur].value
+          );
         }
       }, 0);
       return {
@@ -384,15 +386,17 @@ export async function hottestMovieRecommend() {
     for (let j = 0; j < userRatingMatrix.length; j++) {
       userRatingMatrix[j][i] && count++;
     }
-    result.push({value: count, index: i});
+    result.push({ value: count, index: i });
   }
-  const top = TopN(result, 30)
-  const hottestMovieIds = top.map(item => movieIndex2IdMap[item.index])
-  return await queryMovieById(hottestMovieIds)
+  const top = TopN(result, 30);
+  const hottestMovieIds = top.map((item) => movieIndex2IdMap[item.index]);
+  return await queryMovieById(hottestMovieIds);
 }
 
 const start = Date.now();
-let userRatingMatrix: UserMatrix, userId2IndexMap: IdMap, movieId2IndexMap: IdMap;
+let userRatingMatrix: UserMatrix,
+  userId2IndexMap: IdMap,
+  movieId2IndexMap: IdMap;
 let movieIndex2IdMap: string[];
 let occuranceMatrix: Matrix;
 let itemSimilarMatrix: Matrix;
@@ -420,19 +424,26 @@ export function updateUserRating(
   userId: number,
   movieId: number,
   rating: number,
-  implictRating: number,
+  implictRating: number
 ) {
-  const row = userId2IndexMap[userId]
-  const column = movieId2IndexMap[movieId]
+  const row = userId2IndexMap[userId];
+  const column = movieId2IndexMap[movieId];
   // Tuple 是 undefined | [number, number]
-  const tuple  = userRatingMatrix[row][column]
+  const tuple = userRatingMatrix[row][column];
   if (typeof tuple !== 'undefined') {
-    tuple[0] = rating * 0.7;
-    tuple[1] = implictRating * 0.3;
+    if (implictRating !== undefined) {
+      tuple[0] = rating * 0.7;
+    } else if (rating !== undefined) {
+      tuple[1] = implictRating * 0.3;
+    } else {
+      // 同时存在
+      tuple[0] = rating * 0.7;
+      tuple[1] = implictRating * 0.3;
+    }
   } else {
     // 是用户新增的, 要更新同现矩阵
     userRatingMatrix[row][column] = [rating * 0.7, implictRating * 0.3];
-    updateOccuranceMatrix(row, column)
+    updateOccuranceMatrix(row, column);
   }
   log.success('===评分矩阵更新成功===');
 }
@@ -442,7 +453,7 @@ function updateOccuranceMatrix(row: number, column: number) {
   const watchedMovieIndexList = userRatingMatrix[row]
     .map((item, index) => {
       // 不为0的就是需要更新的索引, 排除了当前的电影
-      return (item !== undefined && column !== index) ? index : -1;
+      return item !== undefined && column !== index ? index : -1;
     })
     .filter((v) => v !== -1);
   for (const i of watchedMovieIndexList) {
