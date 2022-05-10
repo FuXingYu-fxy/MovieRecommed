@@ -1,6 +1,6 @@
-import axios from 'axios';
 import cheerio from 'cheerio';
 import {convert, Movie, MovieInfo} from './tools/processFile'
+import request from "@/request/request"
 import fs from 'fs';
 import log from './tools/log'
 
@@ -18,14 +18,6 @@ interface SpiderNetWorkErrorRecord {
   date: string;
   err: string;
 }
-
-const request = axios.create({
-  baseURL: 'https://www.themoviedb.org',
-  headers: {
-    'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-    Connection: 'keep-alive',
-  },
-});
 
 
 
@@ -69,7 +61,13 @@ async function spider(
   let url = `/${type}/${tmdbId}-${title}`;
   try {
     log.info(`[===]正在爬取${url}`);
-    const { data } = await request(url);
+    const { data } = await request({
+      url: url,
+      headers: {
+        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+        Connection: 'keep-alive',
+      }
+    });
     const $ = cheerio.load(data);
     // 取出背景图
     const poster = $('img.backdrop').attr('src') || '';

@@ -1,9 +1,9 @@
-import axios from "axios"
 import type {AxiosResponse} from "axios"
 import { readRecordFile, updateRecord } from "./fetchMovie";
 import { join } from "path";
 import { writeFile } from "fs";
 import log from "./tools/log";
+import request from "@/request/request";
 interface Result {
   description: string;
   movieId: string;
@@ -12,10 +12,6 @@ interface Result {
   cover: string;
 }
 
-const request = axios.create({
-  baseURL: 'https://www.themoviedb.org',
-  responseType: 'arraybuffer'
-});
 
 function isPromiseFulfilledResultAxiosResponse(res: PromiseRejectedResult | PromiseFulfilledResult<AxiosResponse>): res is PromiseFulfilledResult<AxiosResponse> {
   return (res as PromiseFulfilledResult<AxiosResponse>).value !== undefined
@@ -33,7 +29,7 @@ async function main() {
       continue;
     }
     try {
-      const arr = [data[i].poster && request.get(data[i].poster), data[i].cover && request.get(data[i].cover)]
+      const arr = [data[i].poster && request({url: data[i].poster, responseType: 'arraybuffer'}), data[i].cover && request({url: data[i].cover, responseType: 'arraybuffer'})]
       const resultArr = await Promise.allSettled(arr)
       for (let j = 0; j < resultArr.length; j++) {
         if (resultArr[j].status === 'fulfilled' && (resultArr[j] as PromiseFulfilledResult<AxiosResponse>).value) {
