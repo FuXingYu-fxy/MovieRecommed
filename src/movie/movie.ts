@@ -1,5 +1,6 @@
 import {query} from "@/db"
 import { queryMovieById } from "@/recommend/recommendMovie";
+import log from "@/tools/log";
 
 interface MovieRating {
   rating: number;
@@ -35,12 +36,18 @@ export async function queryFavoriteMovieById(userId: number) {
   }
   return [];
 }
-export async function queryFavoriteMovie(userId: number, movieId:number) {
+export async function queryFavoriteMovieByUser(userId: number, movieId:number) {
   const sql = `select movie_id from user_favorite_movie where user_id=${userId} and movie_id=${movieId}`;
   return await query<{'movie_id': number}>(sql);
 }
 
 export async function delUserFavoriteMovie(userId: number, movieId: number) {
   const sql = `delete from user_favorite_movie where user_id=${userId} and movie_id=${movieId}`;
+  return await query(sql);
+}
+
+export async function innerSearch(keyword: string) {
+  const sql = `select * from movie where title_zh like '%${keyword}%'`;
+  log.info(sql);
   return await query(sql);
 }
