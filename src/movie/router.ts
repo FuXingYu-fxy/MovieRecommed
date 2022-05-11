@@ -23,14 +23,15 @@ movieRouter
       ctx.throw(400, 'bad request userId and movieId is required');
     }
     ctx.type = 'json';
+    const result = await queryMovieRating(Number(userId), Number(movieId));
     ctx.body = createMsg({
-      data: await queryMovieRating(Number(userId), Number(movieId)),
-    });
+      data: result || {rating: 0}
+    })
     await next();
   })
   .post('/updateRating', async (ctx, next) => {
     // 均为 number类型
-    const { userId, movieId, rating, implictRating } = ctx.request.body;
+    const { userId, movieId, rating, implicitRating } = ctx.request.body;
     if (userId === undefined || movieId === undefined) {
       ctx.throw(400, 'bad request, userId、movieIdis required');
     }
@@ -40,11 +41,11 @@ movieRouter
         userId: userId,
         movieId: movieId,
         rating: rating,
-        implictRating: implictRating,
+        implicitRating: implicitRating,
       })
       ctx.body = createMsg();
       // 更新矩阵
-      updateUserRating(userId, movieId, rating, implictRating);
+      updateUserRating(userId, movieId, rating, implicitRating);
     } catch {
       ctx.throw(500, 'update failed');
     }

@@ -19,3 +19,5 @@ declare const PATH = {
   spider: {} as Spider,
   result: {} as Result
 };
+
+// TODO 扩展ctx.request.body

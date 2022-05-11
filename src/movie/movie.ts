@@ -8,23 +8,31 @@ interface MovieRating {
 export async function queryMovieRating(userId: number, movieId: number) {
   const sql = `select rating from rating where user_id = ${userId} and movie_id = ${movieId}`
   const [result] = await query<MovieRating>(sql);
-  return result || 0;
+  return result;
 }
 interface UpdateParams {
   userId: number;
   movieId: number;
   rating: number;
-  implictRating: number;
+  implicitRating: number;
 }
-export async function updateMovieRating({userId, movieId, rating, implictRating}: UpdateParams) {
+export async function updateMovieRating({userId, movieId, rating = 0, implicitRating = 0}: UpdateParams) {
+  // 先查询是否已经评过分
   let sql;
-  if (implictRating === undefined) {
-    sql = `update rating set rating = ${rating} where user_id=${userId} and movie_id=${movieId}`;
-  } else if (rating === undefined) {
-    sql = `update rating set implict_rating = ${implictRating} where user_id=${userId} and movie_id=${movieId}`;
+  const result = await queryMovieRating(userId, movieId);
+  if (result === undefined) {
+    // 未评分, 数据库中无记录
+    sql = `insert into rating (user_id, movie_id, rating, implicit_rating) values (${userId}, ${movieId}, ${rating}, ${implicitRating})`
   } else {
-    // 同时存在
-    sql = `update rating set rating = ${rating}, implict_rating = ${implictRating} where user_id=${userId} and movie_id=${movieId}`;
+    // 存在记录, 更新
+    if (implicitRating === 0) {
+      sql = `update rating set rating = ${rating} where user_id=${userId} and movie_id=${movieId}`;
+    } else if (rating === 0) {
+      sql = `update rating set implicit_rating = ${implicitRating} where user_id=${userId} and movie_id=${movieId}`;
+    } else {
+      // 同时存在
+      sql = `update rating set rating = ${rating}, implicit_rating = ${implicitRating} where user_id=${userId} and movie_id=${movieId}`;
+    }
   }
   const res = await query(sql)
   return res;

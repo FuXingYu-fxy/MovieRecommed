@@ -32,7 +32,7 @@ interface IdMap {
   [index: string]: number;
 }
 type Tuple = [number, number] | null;
-// 现在每个元素是一个元组, 第一个元素是 rating, 第二个元素是 implict_rating
+// 现在每个元素是一个元组, 第一个元素是 rating, 第二个元素是 implicit_rating
 type UserMatrix = Tuple[][];
 type Matrix = number[][];
 
@@ -424,26 +424,26 @@ generateRateMatrix(PATH.result).then(async (v) => {
 export function updateUserRating(
   userId: number,
   movieId: number,
-  rating: number,
-  implictRating: number
+  rating = 0,
+  implicitRating = 0
 ) {
   const row = userId2IndexMap[userId];
   const column = movieId2IndexMap[movieId];
   // Tuple 是 undefined | [number, number]
   const tuple = userRatingMatrix[row][column];
   if (tuple instanceof Array) {
-    if (implictRating !== undefined) {
+    if (implicitRating !== 0) {
       tuple[0] = rating * 0.7;
-    } else if (rating !== undefined) {
-      tuple[1] = implictRating * 0.3;
+    } else if (rating !== 0) {
+      tuple[1] = implicitRating * 0.3;
     } else {
       // 同时存在
       tuple[0] = rating * 0.7;
-      tuple[1] = implictRating * 0.3;
+      tuple[1] = implicitRating * 0.3;
     }
   } else {
     // 是用户新增的, 要更新同现矩阵
-    userRatingMatrix[row][column] = [rating * 0.7, implictRating * 0.3];
+    userRatingMatrix[row][column] = [rating * 0.7, implicitRating * 0.3];
     updateOccuranceMatrix(row, column);
   }
   log.success('===评分矩阵更新成功===');
