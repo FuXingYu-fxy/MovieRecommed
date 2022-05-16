@@ -1,62 +1,50 @@
 import Router from 'koa-router';
-import log from '@/tools/log';
+import { verifyUserByPassword, getToken, verifyToken } from '@/user/verifyUser';
 import createMsg from '@/createMsg';
-import { query } from '@/db';
-import type { User } from '@/db';
-import crypto from '@/tools/crypto';
+
 
 const userRouter = new Router();
 
-// 接收一个token
+// 根据token 获取用户信息
 userRouter.get('/user/userinfo', async (ctx, next) => {
   // TODO 检查token
-  const { token } = ctx.query;
+  const token = ctx.headers['auth-token'];
   await next();
 })
+interface LoginBody {
+  account: number;
+  password: string;
+}
 
 userRouter.post('/user/login', async (ctx, next) => {
-  const { id, passwd } = ctx.request.body as {
-    id: number;
-    passwd: string;
-  };
-  ctx.type = 'json';
-  try {
-    const [data] = await query<User>(`select * from user where id = '${id}'`);
-    if (data.id === id && data.password === crypto.encrypt(passwd)) {
-      // TODO change token
+  const { account, password } = ctx.request.body as LoginBody;
+  // 先检查是否有token
+  const token = ctx.headers['auth-token'];
+  if (!token) {
+    // 没有token, 检测账户密码
+    const result = await verifyUserByPassword(account, password);
+    if (result.pass) {
+      // 如果通过了密码检测, 返回token
       ctx.body = createMsg({
-        data: [{
-          token: crypto.encrypt(String(data.id)),
-        }]
+        data: {
+          token: getToken(result.data!.id, result.data!.account),
+        }
       })
     } else {
+      ctx.throw(400, result.msg);
+    }
+  } else {
+    // 验证 token
+    const result = verifyToken(token as string);
+    if (result.pass) {
       ctx.body = createMsg({
-        message: '用户名或密码错误',
-        code: -1,
+        data: result.data,
+      });
+    } else {
+      ctx.body = createMsg({
+        message: result.msg
       })
     }
-  } catch (err: any) {
-    log.danger(err.message);
-    ctx.throw(500, err.message);
-  }
-  await next();
-});
-
-userRouter.get('/test', async (ctx, next) => {
-  ctx.set('ETag', '123');
-  if (ctx.fresh) {
-    ctx.status = 304;
-    return;
-  }
-  const {name, age} = ctx.request.query
-  const [data] = await query<{name: string; age: number}>(`select * from test where name = '${name}'`)
-  try {
-    ctx.body = createMsg({
-      data: [data]
-    });
-  } catch (err: any) {
-    log.danger(err.message);
-    ctx.throw(500, err.message);
   }
   await next();
 });

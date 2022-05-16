@@ -1,8 +1,5 @@
 import mysql from 'mysql';
-export interface User {
-  id: number;
-  password: string;
-}
+
 
 const connection = mysql.createConnection({
   host: 'localhost',
