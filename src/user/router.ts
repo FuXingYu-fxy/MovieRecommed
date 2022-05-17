@@ -2,6 +2,13 @@ import Router from 'koa-router';
 import { verifyUserByPassword, getToken, verifyToken } from '@/user/verifyUser';
 import createMsg from '@/createMsg';
 
+interface LoginResponse {
+  pass: boolean;
+  token?: string;
+  msg?: string;
+}
+
+// TODO 用一种方法让先前的token 过期
 
 const userRouter = new Router();
 
@@ -10,42 +17,57 @@ userRouter.get('/user/userinfo', async (ctx, next) => {
   // TODO 检查token
   const token = ctx.headers['auth-token'];
   await next();
-})
+});
 interface LoginBody {
-  account: number;
+  account: string;
   password: string;
 }
 
 userRouter.post('/user/login', async (ctx, next) => {
+  // 如果有密码, 代表是第一次登陆或者重新登陆
   const { account, password } = ctx.request.body as LoginBody;
-  // 先检查是否有token
+  if (account && password) {
+    const { pass, data } = await verifyUserByPassword(account, password);
+    if (pass) {
+      // 校验通过, 返回token 流程结束,
+      // 如果pass 通过， 一定存在 id 与 number
+      const token = getToken(data!.id, data!.account);
+      ctx.body = createMsg<LoginResponse>({
+        data: {
+          pass,
+          token,
+        },
+      });
+      return await next();
+    }
+    // 校验未通过
+    ctx.body = createMsg<LoginResponse>({
+      data: {
+        pass: false,
+        msg: '账户或密码错误'
+      },
+    });
+    return await next();
+  }
+  // 不存在账号密码, 验证是否有token
   const token = ctx.headers['auth-token'];
   if (!token) {
-    // 没有token, 检测账户密码
-    const result = await verifyUserByPassword(account, password);
-    if (result.pass) {
-      // 如果通过了密码检测, 返回token
-      ctx.body = createMsg({
-        data: {
-          token: getToken(result.data!.id, result.data!.account),
-        }
-      })
-    } else {
-      ctx.throw(400, result.msg);
+    ctx.body = createMsg<LoginResponse>({
+      data: {
+        pass: false,
+        msg: '请重新登录'
+      }
+    })
+    return await next();
+  } 
+  // 验证token是否有效
+  const {pass, msg} = verifyToken(token as string);
+  ctx.body = createMsg<LoginResponse>({
+    data: {
+      pass,
+      msg
     }
-  } else {
-    // 验证 token
-    const result = verifyToken(token as string);
-    if (result.pass) {
-      ctx.body = createMsg({
-        data: result.data,
-      });
-    } else {
-      ctx.body = createMsg({
-        message: result.msg
-      })
-    }
-  }
+  })
   await next();
 });
 

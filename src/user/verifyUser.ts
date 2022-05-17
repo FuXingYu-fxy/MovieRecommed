@@ -1,11 +1,10 @@
-import crypto from '@/tools/crypto';
 import log from '@/tools/log';
 import { query } from '@/db';
 import jwt from 'jsonwebtoken';
 const salt = 'fxy';
 interface UserInfo {
   id: number;
-  account: number;
+  account: string;
 }
 interface UserLoginRequestBody extends UserInfo {
   password?: string;
@@ -22,10 +21,10 @@ function wrap(options: Wrap) {
     data: options.data || null,
   }
 }
-export async function verifyUserByPassword(account: number, password: string) {
+export async function verifyUserByPassword(account: string, password: string) {
   try {
     const [data] = await query<UserLoginRequestBody>(`select * from user where account = '${account}'`);
-    if (data.account === account && data.password === crypto.encrypt(password)) {
+    if (data.account === account && data.password === password) {
       delete data.password;
       return wrap({
         pass: true,
@@ -44,7 +43,7 @@ export async function verifyUserByPassword(account: number, password: string) {
   }
 }
 
-export function getToken(id: number, account: number) {
+export function getToken(id: number, account: string) {
   return jwt.sign({
     id,
     account
@@ -54,24 +53,20 @@ export function getToken(id: number, account: number) {
   })
 }
 
-interface Signature {
-  id: number;
-  account: number;
+interface VerifyTokenMsg {
+  msg?: string;
+  pass: boolean;
 }
-export function verifyToken(token: string) {
+
+export function verifyToken(token: string): VerifyTokenMsg {
   try {
     // 如果token 非法或者已过期, 就会 throw err
-    const {id, account} = jwt.verify(token, salt) as Signature;
-    return wrap({
-      data: {
-        id,
-        account
-      },
-      pass: true,
-    })
-  } catch (err: any) {
-    return wrap({
-      msg: err.message
-    });
+    jwt.verify(token, salt)
+  } catch  {
+    return {
+      pass: false,
+      msg: 'token无效或token已过期, 请重新登录'
+    }
   }
+  return {pass: true};
 }
