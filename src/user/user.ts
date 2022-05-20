@@ -8,6 +8,7 @@ interface UserInfo {
 }
 interface UserQueryResponse extends UserInfo {
   password?: string;
+  user_name: string;
 }
 
 interface Wrap {
@@ -55,7 +56,7 @@ export function getToken(id: number, account: string) {
     salt,
     {
       // 三天过期  '3d'
-      expiresIn: 60,
+      expiresIn: '3d',
     }
   );
 }
@@ -144,16 +145,63 @@ export async function registryAccount(
   };
 }
 
+async function queryUserById(id: number) {
+  const sql = `select * from user where id = ${id}`;
+  const [result] = await query<UserQueryResponse>(sql);
+  return {
+    id: result.id,
+    account: result.account,
+    userName: result.user_name,
+  }
+}
 
-export function queryUserByToken(token: string) {
+export async function queryUserByToken(token: string) {
   try {
-    const {id, account} = jwt.verify(token, salt);
+    const {id} = jwt.verify(token, salt);
     return {
-      id,
-      account,
+      ... await queryUserById(id),
       pass: true
     }
   } catch {
     return {pass: false}
   }
+}
+
+interface UserPerferenceTable {
+  id: number;
+  tag_name: string;
+}
+export async function getUserPreferenceByUserId(userId: number) {
+  const sql = `select id, tag_name from tag_map where id in (select tag_id from user_preference where user_id = ${userId})`;
+  const result = await query<UserPerferenceTable>(sql);
+  return result;
+}
+
+export async function updateUserPreferenceByUserId(userId: number, list: number[]) {
+  // 先删除
+  const delSql = `delete from user_preference where user_id = ${userId}`;
+  await query(delSql);
+  // 再批量插入
+  const sql = `insert into user_preference(user_id, tag_id) values ${list.map(item => `(${userId}, ${item})`).join(',')}`;
+  const result = await query(sql);
+  return result;
+}
+
+export interface ChangeUserInfo {
+  password?: string;
+  userName?: string;
+}
+export async function updateUserInfo(userId: number, userInfo: ChangeUserInfo) {
+  const {password, userName} = userInfo;
+  let sql = '';
+  if (password) {
+    sql += `password = '${password}', `;
+  }
+  if (userName) {
+    sql += `user_name = '${userName}', `;
+  }
+  sql = sql.slice(0, -2);
+  const updateSql = `update user set ${sql} where id = ${userId}`;
+  const result = await query(updateSql);
+  return result;
 }

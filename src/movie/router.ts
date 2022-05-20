@@ -9,6 +9,7 @@ import {
   queryFavoriteMovieByUser, 
   delUserFavoriteMovie, 
   innerSearch,
+  getAllTags,
 } from '@/movie/movie';
 import createMsg from '@/createMsg';
 import { updateUserRating } from '@/recommend/recommendMovie';
@@ -130,6 +131,12 @@ movieRouter
     ctx.type = 'json';
     ctx.body = createMsg({
       data,
+    })
+    await next();
+  })
+  .get('/tag_list', async (ctx, next) => {
+    ctx.body = createMsg({
+      data: await getAllTags(),
     })
     await next();
   })

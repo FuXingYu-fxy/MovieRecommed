@@ -72,3 +72,12 @@ export async function innerSearch(keyword: string) {
   log.info(sql);
   return await query(sql);
 }
+interface Tags {
+  id: number;
+  tag_name: string;
+}
+export async function getAllTags() {
+  const sql = 'select * from tag_map';
+  const result = await query<Tags>(sql);
+  return result;
+}

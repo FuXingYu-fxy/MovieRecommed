@@ -5,7 +5,11 @@ import {
   verifyToken,
   registryAccount,
   queryUserByToken,
-} from '@/user/verifyUser';
+  getUserPreferenceByUserId,
+  updateUserPreferenceByUserId,
+  updateUserInfo,
+} from '@/user/user';
+import type { ChangeUserInfo } from '@/user/user';
 import createMsg from '@/createMsg';
 
 interface LoginResponse {
@@ -26,11 +30,12 @@ interface LoginBody {
 userRouter
   .post('/user/info', async (ctx, next) => {
     const { token } = ctx.request.body;
-    const result = queryUserByToken(token);
+    const result = await queryUserByToken(token);
     ctx.body = createMsg({
       data: {
         userId: result.id,
         account: result.account,
+        userName: result.userName,
         pass: result.pass,
       },
     });
@@ -93,6 +98,38 @@ userRouter
       return await next();
     }
     await next();
-  });
+  })
+  .post('/user/preference', async (ctx, next) => {
+    const { userId } = ctx.request.body;
+    if (!userId) {
+      ctx.throw(400, 'userId is required');
+    }
+    const result = await getUserPreferenceByUserId(userId);
+    ctx.body = createMsg({
+      data: result,
+    });
+    await next();
+  })
+  .post('/user/updatePreference', async (ctx, next) => {
+    const { userId, preference } = ctx.request.body;
+    if (preference && preference.length === 0) {
+      return await next();
+    }
+    await updateUserPreferenceByUserId(userId, preference);
+    ctx.body = createMsg({});
+    await next();
+  })
+  .post('/user/updateUserInfo', async (ctx, next) => {
+    const { userId, userInfo } = ctx.request.body as {
+      userId: number;
+      userInfo: ChangeUserInfo;
+    };
+    if (!userId) {
+      ctx.throw(400, 'userId is required');
+    }
+    await updateUserInfo(userId, userInfo);
+    ctx.body = createMsg({});
+    await next();
+  })
 
 export default userRouter;
