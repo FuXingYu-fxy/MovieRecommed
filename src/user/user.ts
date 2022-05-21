@@ -205,3 +205,12 @@ export async function updateUserInfo(userId: number, userInfo: ChangeUserInfo) {
   const result = await query(updateSql);
   return result;
 }
+
+export async function checkPassword(userId: number, password: string) {
+  const sql = `select password from user where id = ${userId}`;
+  const result = await query(sql);
+  if (result.length === 0) {
+    return false;
+  }
+  return result[0].password === password;
+}

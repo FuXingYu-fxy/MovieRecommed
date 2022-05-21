@@ -8,6 +8,7 @@ import {
   getUserPreferenceByUserId,
   updateUserPreferenceByUserId,
   updateUserInfo,
+  checkPassword
 } from '@/user/user';
 import type { ChangeUserInfo } from '@/user/user';
 import createMsg from '@/createMsg';
@@ -130,6 +131,20 @@ userRouter
     await updateUserInfo(userId, userInfo);
     ctx.body = createMsg({});
     await next();
-  })
+	})
+	.post('/user/checkPassword', async (ctx, next) => {
+	  const {userId, password} = ctx.request.body;
+	  if (!userId) {
+	    ctx.throw(400, 'userId is required');
+	  }
+	  const pass = await checkPassword(userId, password);
+	  ctx.body = createMsg({
+		data: {
+		  pass
+	    }
+	  });
+	  await next();
+    });
+
 
 export default userRouter;
