@@ -179,12 +179,12 @@ export async function getUserPreferenceByUserId(userId: number) {
 
 export async function updateUserPreferenceByUserId(userId: number, list: number[]) {
   // 先删除
+  if (list.length === 0) return;
   const delSql = `delete from user_preference where user_id = ${userId}`;
   await query(delSql);
   // 再批量插入
   const sql = `insert into user_preference(user_id, tag_id) values ${list.map(item => `(${userId}, ${item})`).join(',')}`;
-  const result = await query(sql);
-  return result;
+  await query(sql);
 }
 
 export interface ChangeUserInfo {
@@ -213,4 +213,22 @@ export async function checkPassword(userId: number, password: string) {
     return false;
   }
   return result[0].password === password;
+}
+
+
+// 获取用户观看的电影类型
+export async function getWatchedMovieTags(userId: number) {
+  const sql = `select id, tag_name from tag_map where id in (select DISTINCT tag_id from tag where movie_id in ( select movie_id from user_favorite_movie where user_id = ${userId}))`;
+  return await query<UserPerferenceTable>(sql);
+}
+
+export async function getWatchedMovieCount(userId: number) {
+  const sql = `select count(movie_id) as count from rating where user_id=${userId}`;
+  const [result] = await query<{count: number}>(sql);
+  const sql2 = `select count(id) as count from user_favorite_movie where user_id = ${userId};`
+  const [result2] = await query<{count: number}>(sql2);
+  return {
+    watched: result.count,
+    laterWatch: result2.count
+  };
 }

@@ -8,7 +8,9 @@ import {
   getUserPreferenceByUserId,
   updateUserPreferenceByUserId,
   updateUserInfo,
-  checkPassword
+  checkPassword,
+  getWatchedMovieTags,
+  getWatchedMovieCount,
 } from '@/user/user';
 import type { ChangeUserInfo } from '@/user/user';
 import createMsg from '@/createMsg';
@@ -131,20 +133,41 @@ userRouter
     await updateUserInfo(userId, userInfo);
     ctx.body = createMsg({});
     await next();
-	})
-	.post('/user/checkPassword', async (ctx, next) => {
-	  const {userId, password} = ctx.request.body;
-	  if (!userId) {
-	    ctx.throw(400, 'userId is required');
-	  }
-	  const pass = await checkPassword(userId, password);
-	  ctx.body = createMsg({
-		data: {
-		  pass
-	    }
-	  });
-	  await next();
+  })
+  .post('/user/checkPassword', async (ctx, next) => {
+    const { userId, password } = ctx.request.body;
+    if (!userId) {
+      ctx.throw(400, 'userId is required');
+    }
+    const pass = await checkPassword(userId, password);
+    ctx.body = createMsg({
+      data: {
+        pass,
+      },
     });
-
+    await next();
+  })
+  .get('/user/watchedMovieTags', async (ctx, next) => {
+    const {userId} = ctx.request.query;
+    if (!userId) {
+      ctx.throw(400, 'userId is required');
+    }
+    const result = await getWatchedMovieTags(Number(userId));
+    ctx.body = createMsg({
+      data: result,
+    })
+    await next();
+  })
+  .post('/user/watchedMovieCount', async (ctx, next) => {
+    const {userId} = ctx.request.body;
+    if (!userId) {
+      ctx.throw(400, 'userId is required');
+    }
+    const result = await getWatchedMovieCount(userId);
+    ctx.body = createMsg({
+      data: result,
+    })
+    await next();
+  })
 
 export default userRouter;
