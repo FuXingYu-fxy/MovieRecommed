@@ -223,7 +223,7 @@ export async function getWatchedMovieTags(userId: number) {
 }
 
 export async function getWatchedMovieCount(userId: number) {
-  const sql = `select count(movie_id) as count from rating where user_id=${userId}`;
+  const sql = `select count(movie_id) as count from rating where user_id=${userId} and rating != 0`;
   const [result] = await query<{count: number}>(sql);
   const sql2 = `select count(id) as count from user_favorite_movie where user_id = ${userId};`
   const [result2] = await query<{count: number}>(sql2);
