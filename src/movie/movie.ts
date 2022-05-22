@@ -81,3 +81,27 @@ export async function getAllTags() {
   const result = await query<Tags>(sql);
   return result;
 }
+
+export interface QueryByPageBody {
+  current: number;
+  pageSize: number;
+  tagId: number;
+}
+
+export async function queryMovieByPage({current, pageSize, tagId}: QueryByPageBody) {
+  let queryMovie: string;
+  let queryCount: string;
+  if (tagId === -1) {
+    queryMovie = `select * from movie limit ${(current - 1) * pageSize}, ${pageSize}`;
+    queryCount = 'select count(*) as count from movie';
+  } else {
+    queryMovie = `select * FROM movie where id in (select movie_id from tag where tag_id = ${tagId}) limit ${(current - 1) * pageSize}, ${pageSize}`;
+    queryCount = `select count(*) as count from movie where id in (select movie_id from tag where tag_id = ${tagId})`;
+  }
+  const movieData = await query(queryMovie);
+  const [total] = await query<{count: number}>(queryCount);
+  return {
+    movieData,
+    total: total.count
+  }
+}

@@ -10,10 +10,12 @@ import {
   delUserFavoriteMovie, 
   innerSearch,
   getAllTags,
+  queryMovieByTag,
+  queryMovieByPage,
 } from '@/movie/movie';
+import type { QueryByPageBody } from '@/movie/movie';
 import createMsg from '@/createMsg';
 import { updateUserRating } from '@/recommend/recommendMovie';
-import { queryMovieByTag } from '@/movie/movie';
 
 const movieRouter = new Router();
 
@@ -139,6 +141,16 @@ movieRouter
       data: await getAllTags(),
     })
     await next();
+  })
+  .post('/queryMovieByPage', async (ctx, next) => {
+    const {current, pageSize, tagId} = ctx.request.body as QueryByPageBody;
+    if (!current || !pageSize || !tagId) {
+      ctx.throw(400, 'bad request');
+    }
+    const result = await queryMovieByPage({current, pageSize, tagId});
+    ctx.body = createMsg({
+      data: result,
+    })
   })
 
 export default movieRouter;
