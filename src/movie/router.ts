@@ -12,6 +12,7 @@ import {
   getAllTags,
   queryMovieByTag,
   queryMovieByPage,
+  getTagsByMovieId,
 } from '@/movie/movie';
 import type { QueryByPageBody } from '@/movie/movie';
 import createMsg from '@/createMsg';
@@ -151,6 +152,18 @@ movieRouter
     ctx.body = createMsg({
       data: result,
     })
+    await next();
+  })
+  .get('/queryTagsByMovieId', async (ctx, next) => {
+    const {movieId} = ctx.query;
+    if (!movieId) {
+      ctx.throw(400, 'bad request');
+    }
+    const data = await getTagsByMovieId(Number(movieId));
+    ctx.body = createMsg({
+      data
+    })
+    await next();
   })
 
 export default movieRouter;

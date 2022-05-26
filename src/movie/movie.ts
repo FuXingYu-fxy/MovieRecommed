@@ -105,3 +105,9 @@ export async function queryMovieByPage({current, pageSize, tagId}: QueryByPageBo
     total: total.count
   }
 }
+
+
+export async function getTagsByMovieId(movieId: number) {
+  const sql = `select * from tag_map where id in (select tag_id from tag where movie_id = ${movieId})`;
+  return await query<Tags>(sql);
+}

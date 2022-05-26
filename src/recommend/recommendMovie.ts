@@ -207,9 +207,9 @@ export async function recommendByUser(userId: string, N: number) {
           const tuple = userRatingMatrix[cur][curMovieIndex];
           if (tuple instanceof Array) {
             return prev + cosSimilar[cur] * (tuple[0] * 0.7 + tuple[1] * 0.3);
-          } else {
-            return prev;
-          }
+          } 
+          
+          return prev;
         }, 0);
         return {
           value: score,
