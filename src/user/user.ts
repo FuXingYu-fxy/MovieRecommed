@@ -23,6 +23,7 @@ function wrap(options: Wrap) {
     data: options.data || null,
   };
 }
+// 如果输入了密码, 就根据密码校验用户信息
 export async function verifyUserByPassword(account: string, password: string) {
   try {
     const [data] = await query<UserQueryResponse>(
@@ -47,6 +48,7 @@ export async function verifyUserByPassword(account: string, password: string) {
   }
 }
 
+// 根据用户信息，生成token
 export function getToken(id: number, account: string) {
   return jwt.sign(
     {
@@ -66,6 +68,7 @@ interface VerifyTokenMsg {
   pass: boolean;
 }
 
+// 校验token
 export function verifyToken(token: string): VerifyTokenMsg {
   try {
     // 如果token 非法或者已过期, 就会 throw err
@@ -86,6 +89,8 @@ interface RegistryResponse {
     token: string;
   } | null;
 }
+
+// 注册账号
 export async function registryAccount(
   account: string,
   password: string
@@ -145,6 +150,7 @@ export async function registryAccount(
   };
 }
 
+// 解析token时, 获取用户信息
 async function queryUserById(id: number) {
   const sql = `select * from user where id = ${id}`;
   const [result] = await query<UserQueryResponse>(sql);
@@ -155,11 +161,15 @@ async function queryUserById(id: number) {
   }
 }
 
+// 根据token获取用户信息
 export async function queryUserByToken(token: string) {
   try {
     const {id} = jwt.verify(token, salt);
+    const user = await queryUserById(id);
+    const permission = await getUserPermission(id);
     return {
-      ... await queryUserById(id),
+      ...user,
+      roles: permission,
       pass: true
     }
   } catch {
@@ -171,12 +181,14 @@ interface UserPerferenceTable {
   id: number;
   tag_name: string;
 }
+// 获取用户的偏好标签
 export async function getUserPreferenceByUserId(userId: number) {
   const sql = `select id, tag_name from tag_map where id in (select tag_id from user_preference where user_id = ${userId})`;
   const result = await query<UserPerferenceTable>(sql);
   return result;
 }
 
+// 更新用户的偏好标签
 export async function updateUserPreferenceByUserId(userId: number, list: number[]) {
   // 先删除
   if (list.length === 0) return;
@@ -191,6 +203,8 @@ export interface ChangeUserInfo {
   password?: string;
   userName?: string;
 }
+
+// 更新用户信息
 export async function updateUserInfo(userId: number, userInfo: ChangeUserInfo) {
   const {password, userName} = userInfo;
   let sql = '';
@@ -206,6 +220,7 @@ export async function updateUserInfo(userId: number, userInfo: ChangeUserInfo) {
   return result;
 }
 
+// 校验密码是否正确
 export async function checkPassword(userId: number, password: string) {
   const sql = `select password from user where id = ${userId}`;
   const result = await query(sql);
@@ -222,6 +237,7 @@ export async function getWatchedMovieTags(userId: number) {
   return await query<UserPerferenceTable>(sql);
 }
 
+// 获取用户评分过的电影数量
 export async function getWatchedMovieCount(userId: number) {
   const sql = `select count(movie_id) as count from rating where user_id=${userId} and rating != 0`;
   const [result] = await query<{count: number}>(sql);
@@ -231,4 +247,10 @@ export async function getWatchedMovieCount(userId: number) {
     watched: result.count,
     laterWatch: result2.count
   };
+}
+
+async function getUserPermission(userId: number) {
+  const sql = `select role from permission where id in (select permission_id from user_permission where user_id = ${userId})`;
+  const result = await query<{role: string}>(sql);
+  return result.map(item => item.role);
 }

@@ -18,21 +18,20 @@ interface UpdateParams {
 }
 export async function updateMovieRating({userId, movieId, rating = 0, implicitRating = 0}: UpdateParams) {
   // 先查询是否已经评过分
-  let sql;
+  let sql = "";
   const result = await queryMovieRating(userId, movieId);
   if (result === undefined) {
     // 未评分, 数据库中无记录
     sql = `insert into rating (user_id, movie_id, rating, implicit_rating) values (${userId}, ${movieId}, ${rating}, ${implicitRating})`
   } else {
     // 存在记录, 更新
-    if (implicitRating === 0) {
-      sql = `update rating set rating = ${rating} where user_id=${userId} and movie_id=${movieId}`;
-    } else if (rating === 0) {
-      sql = `update rating set implicit_rating = ${implicitRating} where user_id=${userId} and movie_id=${movieId}`;
-    } else {
-      // 同时存在
-      sql = `update rating set rating = ${rating}, implicit_rating = ${implicitRating} where user_id=${userId} and movie_id=${movieId}`;
+    if (implicitRating) {
+      sql += `implicit_rating = ${implicitRating}, `;
     }
+    if (rating) {
+      sql += `rating = ${rating}, `;
+    }
+    sql = `update rating set ${sql.slice(0, -2)} where user_id = ${userId} and movie_id = ${movieId}`;
   }
   const res = await query(sql)
   return res;

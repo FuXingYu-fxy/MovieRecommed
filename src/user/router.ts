@@ -39,6 +39,7 @@ userRouter
         userId: result.id,
         account: result.account,
         userName: result.userName,
+        roles: result.roles,
         pass: result.pass,
       },
     });
@@ -169,5 +170,16 @@ userRouter
     })
     await next();
   })
+  // .get('/user/permission', async (ctx, next) => {
+  //   const {userId} = ctx.request.body;
+  //   if (!userId) {
+  //     ctx.throw(400, 'userId is required');
+  //   }
+  //   const data = await getUserPermission(userId);
+  //   ctx.body = createMsg({
+  //     data
+  //   })
+  //   await next();
+  // })
 
 export default userRouter;
