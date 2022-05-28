@@ -7,7 +7,7 @@ interface UserInfo {
   account: string;
 }
 interface UserQueryResponse extends UserInfo {
-  password?: string;
+  password: string;
   user_name: string;
 }
 
@@ -15,6 +15,12 @@ interface Wrap {
   msg?: string;
   pass?: boolean;
   data?: UserInfo;
+}
+interface VerifyToken {
+  id: number;
+  account: string;
+  iat: number;
+  exp: number;
 }
 function wrap(options: Wrap) {
   return {
@@ -29,11 +35,11 @@ export async function verifyUserByPassword(account: string, password: string) {
     const [data] = await query<UserQueryResponse>(
       `select * from user where account = '${account}'`
     );
+    const {password, ...rest} = data;
     if (data.account === account && data.password === password) {
-      delete data.password;
       return wrap({
         pass: true,
-        data,
+        ...rest
       });
     } else {
       return wrap({
@@ -164,11 +170,12 @@ async function queryUserById(id: number) {
 // 根据token获取用户信息
 export async function queryUserByToken(token: string) {
   try {
-    const {id} = jwt.verify(token, salt);
-    const user = await queryUserById(id);
+    const {id} = jwt.verify(token, salt) as VerifyToken;
+    const {id: userId, ...rest} = await queryUserById(id);
     const permission = await getUserPermission(id);
     return {
-      ...user,
+      userId,
+      ...rest,
       roles: permission,
       pass: true
     }

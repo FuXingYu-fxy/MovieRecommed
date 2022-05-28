@@ -105,6 +105,7 @@ movieRouter
       }
     });
     const $ = cheerio.load(data);
+    // 类似于document.querySelectorAll
     const result = $(".result");
     const json = [];
     for (let i = 0; i < 20; i+=2) {
@@ -112,10 +113,10 @@ movieRouter
       if (!result[i]) {
         break;
       }
-      const node = result[i + 1];
+      const node = result.eq(i + 1);
       json.push({
-        href: node.attribs.href,
-        title: node.children[0].children[0].data,
+        href: node.attr("href"),
+        title: node.find("h2").text(),
       });
     }
     ctx.type = "json";

@@ -35,13 +35,7 @@ userRouter
     const { token } = ctx.request.body;
     const result = await queryUserByToken(token);
     ctx.body = createMsg({
-      data: {
-        userId: result.id,
-        account: result.account,
-        userName: result.userName,
-        roles: result.roles,
-        pass: result.pass,
-      },
+      data: result,
     });
     await next();
   })
@@ -170,16 +164,5 @@ userRouter
     })
     await next();
   })
-  // .get('/user/permission', async (ctx, next) => {
-  //   const {userId} = ctx.request.body;
-  //   if (!userId) {
-  //     ctx.throw(400, 'userId is required');
-  //   }
-  //   const data = await getUserPermission(userId);
-  //   ctx.body = createMsg({
-  //     data
-  //   })
-  //   await next();
-  // })
 
 export default userRouter;
