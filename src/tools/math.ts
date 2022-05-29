@@ -17,14 +17,9 @@ export function getVectorModulesLength(vector: Vector): number {
  * @param vector2 向量2
  * @returns
  */
-export function getQuantityProduct(
-  vector1: Vector, 
-  vector2: Vector
-): number {
+export function getQuantityProduct(vector1: Vector, vector2: Vector): number {
   if (vector1.length !== vector2.length) {
-    throw new Error(
-      `vector1 and vector2 must have the same length, but the vector1's length ${vector1.length} and vector2 is ${vector2.length}`
-    );
+    throw new Error('长度不一致');
   }
   let sum = 0;
   for (let i = 0; i < vector1.length; i++) {
@@ -44,18 +39,19 @@ export function getSimilarWithOtherUser(
   userRatingMatrix: UserMatrix
 ) {
   let result = [];
+  const x = userRatingMatrix[curUserIndex].map((item) => {
+    if (item instanceof Array) {
+      // 隐性评分和显性评分占比为 3 : 7
+      return item[0] * 0.7 + item[1] * 0.3;
+    } else {
+      return 0;
+    }
+  });
   for (let i = 0; i < userRatingMatrix.length; i++) {
     if (i === curUserIndex) {
       result.push(0);
       continue;
     }
-    const x = userRatingMatrix[curUserIndex].map((item) => {
-      if (item instanceof Array) {
-        return item[0] * 0.7 + item[1] * 0.3;
-      } else {
-        return 0;
-      }
-    });
     const y = userRatingMatrix[i].map((item) => {
       if (item instanceof Array) {
         return item[0] * 0.7 + item[1] * 0.3;
@@ -72,7 +68,7 @@ export function getSimilarWithOtherUser(
 }
 
 /**
- * 生成候选推荐列表
+ * 生成候选推荐列表, 同时喜欢电影i和电影j
  * @param itemSimilarMatrix 物品相似度矩阵
  * @param watchedMovieList 用户已观看过的电影
  * @param existMovie 用户已观看过的电影, 集合
@@ -81,9 +77,9 @@ export function getSimilarWithOtherUser(
 export function getCandidateRecommendItemList(
   itemSimilarMatrix: Matrix,
   watchedMovieList: number[],
-  existMovie: Set<number>
 ) {
   const result = new Set<number>();
+  const existMovie = new Set(watchedMovieList);
   // 排除用户已看过的电影
   for (let i = 0; i < watchedMovieList.length; i++) {
     const movie = watchedMovieList[i];
@@ -94,6 +90,9 @@ export function getCandidateRecommendItemList(
       if (itemSimilarMatrix[movie][j] > 0) {
         result.add(j);
       }
+    }
+    if (result.size === itemSimilarMatrix[0].length - watchedMovieList.length) {
+      break;
     }
   }
   return Array.from(result);

@@ -76,21 +76,26 @@ function getUserWatchMovies(matrix: UserMatrix, userIndex: number) {
     .map((item, index) => (item == null ? -1 : index))
     .filter((item) => item !== -1);
 }
-/**
- * 获取对电影`i`打过分的用户集合
- * @param matrix 用户-评分矩阵
- * @param i 当前电影索引
- * @param curUserIndex 当前用户
- */
-function getUserWithRatedMovie(
-  matrix: Matrix,
-  i: number,
-  curUserIndex: number = -1
-) {
-  return matrix.filter(
-    (item, userIndex) => item[i] && curUserIndex !== userIndex
-  );
-}
+// /**
+//  * 获取对电影`i`打过分的用户集合
+//  * @param matrix 用户-评分矩阵
+//  * @param i 当前电影索引
+//  * @param curUserIndex 当前用户
+//  */
+// function getUserWithRatedMovie(
+//   matrix: Matrix,
+//   i: number,
+//   curUserIndex: number = -1
+// ) {
+//   return matrix.filter(
+//     (item, userIndex) => item[i] && curUserIndex !== userIndex
+//   );
+// }
+
+// {userId: 1, movieId: 1, rating: 3}
+// {userId: 1, movieId: 2, rating: 4}
+// {userId: 1, movieId: 3, rating: 5}
+// {1: [{movieId: 1, rating: 3}, {movieId: 2, rating: 4}, {movieId:3, rating: 5}]}
 
 async function generateRateMatrix({
   originFilepath,
@@ -105,9 +110,8 @@ async function generateRateMatrix({
     const movieIdSet = new Set<number>();
     for (let i = 0; i < json.length; i++) {
       const { userId, movieId, rating } = json[i];
-      const temp = {movieId, rating: rating * 0.7}
+      const temp = {movieId, rating}
       if (userId in userMovieRecord) {
-        // 隐性评分和显性评分占比为 3 : 7
         userMovieRecord[userId].push(temp);
       } else {
         userMovieRecord[userId] = [temp];
@@ -131,15 +135,14 @@ async function generateRateMatrix({
     const userRatingMatrix: UserMatrix = Array(userIds.length).fill(null);
     for (let i = 0; i < userIds.length; i++) {
       const userId = userIds[i];
-      const userIndex = userId2IndexMap[userId];
       // 为每一个用户填充矩阵, 注意该矩阵是一个稀疏矩阵
-      userRatingMatrix[userIndex] = Array(movieIds.length).fill(null);
+      userRatingMatrix[i] = Array(movieIds.length).fill(null);
       const curUserRecord = userMovieRecord[Number(userId)];
       for (let j = 0; j < curUserRecord.length; j++) {
         const { movieId, rating } = curUserRecord[j];
         const movieIndex = movieId2IndexMap[movieId];
         if (rating !== 0) {
-          userRatingMatrix[userIndex][movieIndex] = [rating, 0];
+          userRatingMatrix[i][movieIndex] = [rating, 0];
         }
       }
     }
@@ -236,30 +239,20 @@ export async function recommendByItem(userId: string, N: number) {
     }
     // 当前用户观看过的电影, 索引列表
     const userWatchedMovies = getUserWatchMovies(userRatingMatrix, userIndex);
-    const existMovie = new Set(userWatchedMovies);
-    const candidateRecommend = getCandidateRecommendItemList(
-      itemSimilarMatrix,
-      userWatchedMovies,
-      existMovie
-    );
+    const candidateRecommend = getCandidateRecommendItemList(itemSimilarMatrix, userWatchedMovies);
+    // getUserUnwatchMovies(userRatingMatrix, userIndex);
 
     // TODO 考虑使用多线程
     const interestScoreList: Item[] = candidateRecommend.map((movieIndex) => {
-      // 对候选推荐列表中的每个物品再次计算相似度, 取前K个
-      let similarItem: Item[] = itemSimilarMatrix[movieIndex].map((item, i) => {
-        return {
-          value: item,
-          index: i,
-        };
-      });
-      // similarItem = TopN(similarItem, K);
+      // 不需要取前K个
+      let similarItem = itemSimilarMatrix[movieIndex];
       // 计算兴趣度
       const score = userWatchedMovies.reduce((prev, cur) => {
         // 兴趣度计算时要混合隐性评分
         const tuple = userRatingMatrix[userIndex][cur];
         if (tuple instanceof Array) {
           return (
-            prev + (tuple[0] * 0.7 + tuple[1] * 0.3) * similarItem[cur].value
+            prev + (tuple[0] * 0.7 + tuple[1] * 0.3) * similarItem[cur] // 多加了不相关商品的相似度
           );
         } else {
           // 视为0
