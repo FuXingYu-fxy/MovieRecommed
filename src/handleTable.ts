@@ -52,7 +52,7 @@ function generatePassword(bit = 32) {
   }
   let result = '';
   for (let i = 0; i < bit; i++) {
-    result += str[~~(Math.random() * 32)];
+    result += str[~~(Math.random() * str.length)];
   }
   return result;
 }
@@ -66,7 +66,7 @@ function jsontocsv<T>(arr: Array<T>, delimiter = ',') {
 }
 
 // 生成用户表
-async function f1() {
+(async function() {
   const json1: Ratings[] = await csv().fromFile(partialJoin('ratings.csv'));
   let j = 0;
   for (let i = 1; i < json1.length; i++) {
@@ -83,15 +83,10 @@ async function f1() {
   fs.writeFile(partialJoin('_user.csv'), jsontocsv(userArr), () => {
     console.log('successful!');
   });
-}
-f1();
-
-function wrapString(str: string) {
-  return `"${str}"`;
-}
+})();
 
 // 生成电影表
-async function f2() {
+(async function() {
   /**
    * id, poster, cover, description, title_zh, title_cn
    * json1: id, title_cn
@@ -130,11 +125,10 @@ async function f2() {
   fs.writeFile(partialJoin('_movie.csv'), jsontocsv(result, '|'), () => {
     console.log('done');
   });
-}
-f2();
+})();
 
 // 生成评分表
-async function f3() {
+(async function () {
   const json1: Ratings[] = await csv().fromFile(partialJoin('ratings.csv'));
   const result = json1.map((item, i) => {
     return {
@@ -147,11 +141,10 @@ async function f3() {
   fs.writeFile(partialJoin('_rating.csv'), jsontocsv(result), () => {
     console.log('done');
   });
-}
-f3();
+})();
 
 // 生成所有电影标签类型
-async function f4() {
+(async function () {
   const json1: OriginMovies[] = await csv().fromFile(
     partialJoin('origin_movies.csv')
   );
@@ -169,12 +162,11 @@ async function f4() {
   fs.writeFile(partialJoin('_tag_map.csv'), jsontocsv(result), () => {
     console.log('done');
   });
-}
+})();
 
-f4();
 
 // 生成标签表
-async function f5() {
+(async function () {
   const json1: OriginMovies[] = await csv().fromFile(
     partialJoin('origin_movies.csv')
   );
@@ -197,6 +189,4 @@ async function f5() {
   fs.writeFile(partialJoin('_movie_tag.csv'), jsontocsv(result), () => {
     console.log('done');
   });
-}
-
-f5();
+})();

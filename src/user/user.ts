@@ -35,11 +35,11 @@ export async function verifyUserByPassword(account: string, password: string) {
     const [data] = await query<UserQueryResponse>(
       `select * from user where account = '${account}'`
     );
-    const {password, ...rest} = data;
+    const { password: _, ...rest } = data;
     if (data.account === account && data.password === password) {
       return wrap({
         pass: true,
-        ...rest
+        data: rest,
       });
     } else {
       return wrap({
@@ -145,7 +145,7 @@ export async function registryAccount(
       msg: '系统发生错误, 注册失败, 请联系管理员',
       data: null,
     };
-  } 
+  }
   const token = getToken(id, account);
   return {
     pass,
@@ -156,7 +156,6 @@ export async function registryAccount(
   };
 }
 
-// 解析token时, 获取用户信息
 async function queryUserById(id: number) {
   const sql = `select * from user where id = ${id}`;
   const [result] = await query<UserQueryResponse>(sql);
@@ -164,23 +163,23 @@ async function queryUserById(id: number) {
     id: result.id,
     account: result.account,
     userName: result.user_name,
-  }
+  };
 }
 
 // 根据token获取用户信息
 export async function queryUserByToken(token: string) {
   try {
-    const {id} = jwt.verify(token, salt) as VerifyToken;
-    const {id: userId, ...rest} = await queryUserById(id);
+    const { id } = jwt.verify(token, salt) as VerifyToken;
+    const { id: userId, ...rest } = await queryUserById(id);
     const permission = await getUserPermission(id);
     return {
       userId,
       ...rest,
       roles: permission,
-      pass: true
-    }
+      pass: true,
+    };
   } catch {
-    return {pass: false}
+    return { pass: false };
   }
 }
 
@@ -196,13 +195,18 @@ export async function getUserPreferenceByUserId(userId: number) {
 }
 
 // 更新用户的偏好标签
-export async function updateUserPreferenceByUserId(userId: number, list: number[]) {
+export async function updateUserPreferenceByUserId(
+  userId: number,
+  list: number[]
+) {
   // 先删除
   if (list.length === 0) return;
   const delSql = `delete from user_preference where user_id = ${userId}`;
   await query(delSql);
   // 再批量插入
-  const sql = `insert into user_preference(user_id, tag_id) values ${list.map(item => `(${userId}, ${item})`).join(',')}`;
+  const sql = `insert into user_preference(user_id, tag_id) values ${list
+    .map((item) => `(${userId}, ${item})`)
+    .join(',')}`;
   await query(sql);
 }
 
@@ -213,7 +217,7 @@ export interface ChangeUserInfo {
 
 // 更新用户信息
 export async function updateUserInfo(userId: number, userInfo: ChangeUserInfo) {
-  const {password, userName} = userInfo;
+  const { password, userName } = userInfo;
   let sql = '';
   if (password) {
     sql += `password = '${password}', `;
@@ -237,7 +241,6 @@ export async function checkPassword(userId: number, password: string) {
   return result[0].password === password;
 }
 
-
 // 获取用户观看的电影类型
 export async function getWatchedMovieTags(userId: number) {
   const sql = `select id, tag_name from tag_map where id in (select DISTINCT tag_id from tag where movie_id in ( select movie_id from user_favorite_movie where user_id = ${userId}))`;
@@ -247,17 +250,17 @@ export async function getWatchedMovieTags(userId: number) {
 // 获取用户评分过的电影数量
 export async function getWatchedMovieCount(userId: number) {
   const sql = `select count(movie_id) as count from rating where user_id=${userId} and rating != 0`;
-  const [result] = await query<{count: number}>(sql);
-  const sql2 = `select count(id) as count from user_favorite_movie where user_id = ${userId};`
-  const [result2] = await query<{count: number}>(sql2);
+  const [result] = await query<{ count: number }>(sql);
+  const sql2 = `select count(id) as count from user_favorite_movie where user_id = ${userId};`;
+  const [result2] = await query<{ count: number }>(sql2);
   return {
     watched: result.count,
-    laterWatch: result2.count
+    laterWatch: result2.count,
   };
 }
 
 async function getUserPermission(userId: number) {
   const sql = `select role from permission where id in (select permission_id from user_permission where user_id = ${userId})`;
-  const result = await query<{role: string}>(sql);
-  return result.map(item => item.role);
+  const result = await query<{ role: string }>(sql);
+  return result.map((item) => item.role);
 }

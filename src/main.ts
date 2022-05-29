@@ -22,7 +22,6 @@ connection.connect((err) => {
 const port = 5500;
 // koa
 const app = new Koa();
-app.keys = ['some secret hurr'];
 
 // ================== begin ==================
 
@@ -43,7 +42,7 @@ async function pageNotFound(ctx: Koa.Context, next: Koa.Next) {
     case 'json':
       ctx.type = 'json';
       ctx.body = createMsg({
-        data: 'Page Not Found'
+        data: 'nothing'
       });
       break;
     default:

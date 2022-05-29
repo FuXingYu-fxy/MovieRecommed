@@ -157,20 +157,20 @@ export async function main() {
   saveData(result, saveFilename);
 }
 
-async function recordException(
-  exceptionMsg: SpiderNetWorkErrorRecord,
-  errorPath: string
-) {
-  const data = await readRecordFile<SpiderNetWorkErrorRecord[]>(errorPath)
-  data.push(exceptionMsg);
-  fs.writeFile(errorPath, JSON.stringify(data), (err) => {
-    if (err) {
-      log.danger(err.message);
-      return;
-    }
-    log.success('错误信息已记录');
-  });
-}
+// async function recordException(
+//   exceptionMsg: SpiderNetWorkErrorRecord,
+//   errorPath: string
+// ) {
+//   const data = await readRecordFile<SpiderNetWorkErrorRecord[]>(errorPath)
+//   data.push(exceptionMsg);
+//   fs.writeFile(errorPath, JSON.stringify(data), (err) => {
+//     if (err) {
+//       log.danger(err.message);
+//       return;
+//     }
+//     log.success('错误信息已记录');
+//   });
+// }
 
 /**
  * 分段保存文件 
@@ -205,5 +205,4 @@ export function updateRecord(index: number, segment: number, recordFilename: str
     }
   );
 }
-
 

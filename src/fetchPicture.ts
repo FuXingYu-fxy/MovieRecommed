@@ -13,10 +13,6 @@ interface Result {
 }
 
 
-function isPromiseFulfilledResultAxiosResponse(res: PromiseRejectedResult | PromiseFulfilledResult<AxiosResponse>): res is PromiseFulfilledResult<AxiosResponse> {
-  return (res as PromiseFulfilledResult<AxiosResponse>).value !== undefined
-}
-
 const field = ['poster', 'cover']
 async function main() {
   // 第一次执行时记得重置 recordFilename

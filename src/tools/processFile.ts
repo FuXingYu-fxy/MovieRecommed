@@ -17,6 +17,11 @@ export interface Movie {
   tmdbId: number;
 }
 
+/**
+ * 将csv文件转换为json文件
+ * @param pathname 文件路径
+ * @returns 
+ */
 export function convert<T = Movie>(pathname: string) {
   return csv().fromFile(pathname) as unknown as Promise<T[]>;
 }

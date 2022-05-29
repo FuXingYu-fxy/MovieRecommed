@@ -65,26 +65,27 @@ userRouter
       });
       return await next();
     }
-    // 不存在账号密码, 验证是否有token
-    const token = ctx.headers['auth-token'];
-    if (!token) {
-      ctx.body = createMsg<LoginResponse>({
-        data: {
-          pass: false,
-          msg: '请重新登录',
-        },
-      });
-      return await next();
-    }
-    // 验证token是否有效
-    const { pass, msg } = verifyToken(token as string);
-    ctx.body = createMsg<LoginResponse>({
-      data: {
-        pass,
-        msg,
-      },
-    });
-    await next();
+    ctx.throw(400, "请输入账号密码");
+    // // 不存在账号密码, 验证是否有token
+    // const token = ctx.headers['auth-token'];
+    // if (!token) {
+    //   ctx.body = createMsg<LoginResponse>({
+    //     data: {
+    //       pass: false,
+    //       msg: '请重新登录',
+    //     },
+    //   });
+    //   return await next();
+    // }
+    // // 验证token是否有效
+    // const { pass, msg } = verifyToken(token as string);
+    // ctx.body = createMsg<LoginResponse>({
+    //   data: {
+    //     pass,
+    //     msg,
+    //   },
+    // });
+    // await next();
   })
   .post('/user/registry', async (ctx, next) => {
     const { account, password } = ctx.request.body;
