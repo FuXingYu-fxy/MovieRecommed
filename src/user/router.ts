@@ -143,8 +143,8 @@ userRouter
     });
     await next();
   })
-  .get('/user/watchedMovieTags', async (ctx, next) => {
-    const {userId} = ctx.request.query;
+  .post('/user/watchedMovieTags', async (ctx, next) => {
+    const {userId} = ctx.request.body;
     if (!userId) {
       ctx.throw(400, 'userId is required');
     }
