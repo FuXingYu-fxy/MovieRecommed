@@ -10,6 +10,7 @@ module.exports = (env) => {
     entry: {
       main: './src/main.ts',
       fetchPicture: './src/fetchPicture.ts',
+      fetchMovie: './src/fetchMovie.ts',
       handleTable: './src/handleTable.ts'
     },
     output: {

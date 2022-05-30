@@ -6,6 +6,8 @@
   "scripts": {
     "build": "webpack",
     "start": "node ./dist/main.js",
+	"spider-picture": "node ./dist/fetchPicture.js",
+	"spider-movie": "node ./dist/fetchMovie.js",
     "watch": "webpack --watch"
   },
   "keywords": [],
