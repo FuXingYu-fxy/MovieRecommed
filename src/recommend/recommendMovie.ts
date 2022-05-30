@@ -320,13 +320,9 @@ async function generateCoOccuranceMatrix(
       }
 
       for (let k = 0; k < columnLen; k++) {
-        if (j === k) {
+        if (j === k || matrix[i][k] == null) {
           continue;
         }
-        if (matrix[i][k] == null) {
-          continue;
-        }
-        // TODO 优化, 矩阵是个对称矩阵, 只需要两个for循环
         result[j][k] += 1;
       }
     }
@@ -348,6 +344,7 @@ function generateItemSimilarMatrix(
   log.info('正在构建相似度矩阵...');
   const start = Date.now();
   const favoriteList: number[] = [];
+  // 计算出每部电影喜欢的人数
   for (let i = 0; i < userRatingMatrix[0].length; i++) {
     let count = 0;
     for (let j = 0; j < userRatingMatrix.length; j++) {
@@ -356,7 +353,6 @@ function generateItemSimilarMatrix(
     favoriteList.push(count);
   }
   const result = [];
-  // TODO 对称矩阵优化
   for (let i = 0; i < occuranceMatrix.length; i++) {
     for (let j = 0; j < occuranceMatrix[i].length; j++) {
       if (i === 0) {

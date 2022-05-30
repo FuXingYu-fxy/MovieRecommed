@@ -30,6 +30,7 @@ class Heap {
     }
     this.data[parent] = pit;
   }
+  // 插入时，元素上浮
   adjustHeapBubble(child: number) {
     let parent = Math.floor((child - 1) / 2);
     const pit = this.data[child];
